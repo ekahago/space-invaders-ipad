@@ -45,6 +45,12 @@ const enemyColors = ["red", "yellow", "cyan"];
 const shootSound = new Audio("https://www.soundjay.com/button/sounds/button-16.mp3");
 const hitSound = new Audio("https://www.soundjay.com/button/sounds/button-10.mp3");
 const shieldHitSound = new Audio("https://www.soundjay.com/button/sounds/button-19.mp3");
+const explosionSound = new Audio("https://www.soundjay.com/explosion/explosion-01.mp3");
+
+function playExplosion() {
+  explosionSound.currentTime = 0;
+  explosionSound.play();
+}
 
 const musicTracks = [
   new Audio("https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"),
@@ -100,7 +106,7 @@ function createShields() {
 createEnemies();
 createShields();
 
-document.addEventListener("keydown", e => keys[e.code] = true);
+ document.addEventListener("keydown", e => keys[e.code] = true);
 document.addEventListener("keyup", e => keys[e.code] = false);
 
 function checkPowerLevel() {
@@ -161,6 +167,7 @@ function checkCollisions() {
         score += 100 * wave;
         hitSound.currentTime = 0;
         hitSound.play();
+        playExplosion();
       }
     });
   });
@@ -178,6 +185,7 @@ function checkCollisions() {
       player.lives--;
       shieldHitSound.currentTime = 0;
       shieldHitSound.play();
+      playExplosion();
       if (player.powerLevel > 0) player.powerLevel--;
       if (player.lives <= 0) {
         alert("Game Over! Score: " + score);
@@ -198,6 +206,7 @@ function checkCollisions() {
         shield.hp--;
         shieldHitSound.currentTime = 0;
         shieldHitSound.play();
+        playExplosion();
       }
     });
   });
