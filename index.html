@@ -12,20 +12,24 @@
   </style>
 </head>
 <body>
+
 <canvas id="gameCanvas" width="800" height="600"></canvas>
+
 <select id="musicSelect" onchange="changeMusic()" style="display: block; margin: auto;">
   <option value="1">Musik 1</option>
   <option value="2">Musik 2</option>
   <option value="3">Musik 3</option>
   <option value="4">Musik 4</option>
 </select>
+
 <button onclick="startMusic()" style="display: block; margin: auto;">Starta Musik</button>
+<button onclick="toggleMusic()" style="display: block; margin: auto;">Stäng av/På Musik</button>
 
 <script>
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
-const player = { x: 375, y: 550, w: 50, h: 20, speed: 5, bullets: [], lives: 3 };
+const player = { x: 375, y: 550, w: 50, h: 20, speed: 5, bullets: [], lives: 3, powerLevel: 0 };
 let keys = {};
 let enemies = [];
 let enemyDirection = 1;
@@ -34,24 +38,37 @@ let enemyBullets = [];
 let shields = [];
 let score = 0;
 let wave = 1;
+
 const enemyShapes = ["triangle", "rect", "circle"];
 const enemyColors = ["red", "yellow", "cyan"];
 
 const shootSound = new Audio("https://www.soundjay.com/button/sounds/button-16.mp3");
 const hitSound = new Audio("https://www.soundjay.com/button/sounds/button-10.mp3");
 const shieldHitSound = new Audio("https://www.soundjay.com/button/sounds/button-19.mp3");
+
 const musicTracks = [
   new Audio("https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"),
   new Audio("https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3"),
   new Audio("https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3"),
   new Audio("https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3")
 ];
+
 let music = musicTracks[0];
 music.loop = true;
 music.volume = 0.3;
+let musicPlaying = true;
 
 function startMusic() {
   music.play();
+}
+
+function toggleMusic() {
+  if (musicPlaying) {
+    music.pause();
+  } else {
+    music.play();
+  }
+  musicPlaying = !musicPlaying;
 }
 
 function changeMusic() {
@@ -61,7 +78,7 @@ function changeMusic() {
   music = musicTracks[index];
   music.loop = true;
   music.volume = 0.3;
-  music.play();
+  if (musicPlaying) music.play();
 }
 
 function createEnemies() {
@@ -73,36 +90,38 @@ function createEnemies() {
   }
 }
 
-createEnemies();
-
-for (let i = 0; i < 3; i++) {
-  shields.push({ x: 150 + i * 200, y: 450, w: 60, h: 20, hp: 5 });
+function createShields() {
+  shields = [];
+  for (let i = 0; i < 3; i++) {
+    shields.push({ x: 150 + i * 200, y: 450, w: 60, h: 20, hp: 5 });
+  }
 }
+
+createEnemies();
+createShields();
 
 document.addEventListener("keydown", e => keys[e.code] = true);
 document.addEventListener("keyup", e => keys[e.code] = false);
 
-function update() {
-  if (keys["ArrowLeft"]) player.x -= player.speed;
-  if (keys["ArrowRight"]) player.x += player.speed;
-  player.x = Math.max(0, Math.min(canvas.width - player.w, player.x));
-
-  if (keys["Space"]) fire();
-
-  player.bullets.forEach(b => b.y -= 7);
-  player.bullets = player.bullets.filter(b => b.y > 0);
-
-  enemyBullets.forEach(b => b.y += 4);
-  enemyBullets = enemyBullets.filter(b => b.y < canvas.height);
-
-  moveEnemies();
-  checkCollisions();
-  enemyFire();
+function checkPowerLevel() {
+  if (score >= 2000) {
+    player.powerLevel = 2;
+  } else if (score >= 1000) {
+    player.powerLevel = 1;
+  } else {
+    player.powerLevel = 0;
+  }
 }
 
 function fire() {
-  if (!player.lastFire || Date.now() - player.lastFire > 300) {
-    player.bullets.push({ x: player.x + player.w / 2 - 2, y: player.y });
+  let fireRate = player.powerLevel === 2 ? 150 : 300;
+  if (!player.lastFire || Date.now() - player.lastFire > fireRate) {
+    if (player.powerLevel >= 1) {
+      player.bullets.push({ x: player.x + 10, y: player.y });
+      player.bullets.push({ x: player.x + player.w - 14, y: player.y });
+    } else {
+      player.bullets.push({ x: player.x + player.w / 2 - 2, y: player.y });
+    }
     player.lastFire = Date.now();
     shootSound.currentTime = 0;
     shootSound.play();
@@ -139,7 +158,7 @@ function checkCollisions() {
       if (e.alive && b.x < e.x + e.w && b.x + 4 > e.x && b.y < e.y + e.h && b.y + 10 > e.y) {
         e.alive = false;
         b.y = -10;
-        score += 100;
+        score += 100 * wave;
         hitSound.currentTime = 0;
         hitSound.play();
       }
@@ -150,6 +169,7 @@ function checkCollisions() {
     enemySpeed += 0.5;
     wave++;
     createEnemies();
+    createShields();
   }
 
   enemyBullets.forEach(b => {
@@ -158,6 +178,7 @@ function checkCollisions() {
       player.lives--;
       shieldHitSound.currentTime = 0;
       shieldHitSound.play();
+      if (player.powerLevel > 0) player.powerLevel--;
       if (player.lives <= 0) {
         alert("Game Over! Score: " + score);
         location.reload();
@@ -184,6 +205,25 @@ function checkCollisions() {
   shields = shields.filter(s => s.hp > 0);
 }
 
+function update() {
+  if (keys["ArrowLeft"]) player.x -= player.speed;
+  if (keys["ArrowRight"]) player.x += player.speed;
+  player.x = Math.max(0, Math.min(canvas.width - player.w, player.x));
+
+  if (keys["Space"]) fire();
+
+  player.bullets.forEach(b => b.y -= 7);
+  player.bullets = player.bullets.filter(b => b.y > 0);
+
+  enemyBullets.forEach(b => b.y += 4);
+  enemyBullets = enemyBullets.filter(b => b.y < canvas.height);
+
+  moveEnemies();
+  checkCollisions();
+  enemyFire();
+  checkPowerLevel();
+}
+
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -196,6 +236,7 @@ function draw() {
   let shape = enemyShapes[(wave - 1) % enemyShapes.length];
   let color = enemyColors[(wave - 1) % enemyColors.length];
   ctx.fillStyle = color;
+
   enemies.forEach(e => {
     if (e.alive) {
       ctx.beginPath();
@@ -224,6 +265,7 @@ function draw() {
   ctx.fillText("Score: " + score, 10, 20);
   ctx.fillText("Lives: " + player.lives, 700, 20);
   ctx.fillText("Wave: " + wave, 350, 20);
+  ctx.fillText("Power: " + player.powerLevel, 350, 50);
 }
 
 function gameLoop() {
@@ -234,5 +276,6 @@ function gameLoop() {
 
 gameLoop();
 </script>
+
 </body>
 </html>
