@@ -13,6 +13,12 @@
 </head>
 <body>
 <canvas id="gameCanvas" width="800" height="600"></canvas>
+<select id="musicSelect" onchange="changeMusic()" style="display: block; margin: auto;">
+  <option value="1">Musik 1</option>
+  <option value="2">Musik 2</option>
+  <option value="3">Musik 3</option>
+  <option value="4">Musik 4</option>
+</select>
 <button onclick="startMusic()" style="display: block; margin: auto;">Starta Musik</button>
 
 <script>
@@ -33,11 +39,28 @@ const enemyColors = ["red", "yellow", "cyan"];
 
 const shootSound = new Audio("https://www.soundjay.com/button/sounds/button-16.mp3");
 const hitSound = new Audio("https://www.soundjay.com/button/sounds/button-10.mp3");
-const music = new Audio("https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3");
+const shieldHitSound = new Audio("https://www.soundjay.com/button/sounds/button-19.mp3");
+const musicTracks = [
+  new Audio("https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"),
+  new Audio("https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3"),
+  new Audio("https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3"),
+  new Audio("https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3")
+];
+let music = musicTracks[0];
 music.loop = true;
 music.volume = 0.3;
 
 function startMusic() {
+  music.play();
+}
+
+function changeMusic() {
+  music.pause();
+  const select = document.getElementById("musicSelect");
+  const index = parseInt(select.value) - 1;
+  music = musicTracks[index];
+  music.loop = true;
+  music.volume = 0.3;
   music.play();
 }
 
@@ -53,7 +76,7 @@ function createEnemies() {
 createEnemies();
 
 for (let i = 0; i < 3; i++) {
-  shields.push({ x: 150 + i * 200, y: 450, w: 60, h: 20, hp: 3 });
+  shields.push({ x: 150 + i * 200, y: 450, w: 60, h: 20, hp: 5 });
 }
 
 document.addEventListener("keydown", e => keys[e.code] = true);
@@ -133,6 +156,8 @@ function checkCollisions() {
     if (b.x < player.x + player.w && b.x + 4 > player.x && b.y < player.y + player.h && b.y + 10 > player.y) {
       b.y = -10;
       player.lives--;
+      shieldHitSound.currentTime = 0;
+      shieldHitSound.play();
       if (player.lives <= 0) {
         alert("Game Over! Score: " + score);
         location.reload();
@@ -150,6 +175,8 @@ function checkCollisions() {
       if (b.x < shield.x + shield.w && b.x + 4 > shield.x && b.y < shield.y + shield.h && b.y + 10 > shield.y) {
         b.y = -10;
         shield.hp--;
+        shieldHitSound.currentTime = 0;
+        shieldHitSound.play();
       }
     });
   });
