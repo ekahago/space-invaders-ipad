@@ -24,6 +24,7 @@
 
 <button onclick="startMusic()" style="display: block; margin: auto;">Starta Musik</button>
 <button onclick="toggleMusic()" style="display: block; margin: auto;">Stäng av/På Musik</button>
+<button onclick="enableSounds()" style="display: block; margin: auto;">Aktivera Ljud</button>
 
 <script>
 const canvas = document.getElementById("gameCanvas");
@@ -61,6 +62,13 @@ shootSound.volume = 0.7;
 hitSound.volume = 0.7;
 shieldHitSound.volume = 0.7;
 explosionSound.volume = 1.0;
+
+function enableSounds() {
+  shootSound.play().catch(() => {});
+  hitSound.play().catch(() => {});
+  shieldHitSound.play().catch(() => {});
+  explosionSound.play().catch(() => {});
+}
 
 function playExplosion() {
   explosionSound.currentTime = 0;
