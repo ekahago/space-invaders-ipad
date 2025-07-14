@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>iPad Space Shooter</title>
+  <style>
+    canvas { background: black; display: block; margin: 0 auto; touch-action: none; }
+    #controls {
+      position: fixed; bottom: 20px; width: 100%; text-align: center;
+    }
+    button {
+      width: 80px; height: 80px; font-size: 24px; margin: 0 10px;
+      border-radius: 50%; border: none; background-color: #444; color: white;
+    }
+  </style>
+</head>
+<body>
+<canvas id="gameCanvas" width="800" height="600"></canvas>
+<div id="controls">
+  <button id="leftBtn">⏪</button>
+  <button id="fireBtn">🔥</button>
+  <button id="rightBtn">⏩</button>
+</div>
+
+<script>
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+
+let keys = { left: false, right: false, fire: false };
+
+document.getElementById("leftBtn").addEventListener("touchstart", () => keys.left = true);
+document.getElementById("leftBtn").addEventListener("touchend", () => keys.left = false);
+document.getElementById("rightBtn").addEventListener("touchstart", () => keys.right = true);
+document.getElementById("rightBtn").addEventListener("touchend", () => keys.right = false);
+document.getElementById("fireBtn").addEventListener("touchstart", () => keys.fire = true);
+document.getElementById("fireBtn").addEventListener("touchend", () => keys.fire = false);
+
+const player = { x: 375, y: 550, w: 50, h: 20, bullets: [] };
+const enemies = [];
+const enemyBullets = [];
+let lastFire = 0;
+
+for (let i = 0; i < 5; i++) {
+  for (let j = 0; j < 10; j++) {
+    enemies.push({ x: 60 + j * 60, y: 40 + i * 40, w: 30, h: 20, alive: true });
+  }
+}
+
+function drawPlayer() {
+  ctx.fillStyle = "lime";
+  ctx.fillRect(player.x, player.y, player.w, player.h);
+}
+
+function drawEnemies() {
+  ctx.fillStyle = "red";
+  enemies.forEach(e => {
+    if (e.alive) ctx.fillRect(e.x, e.y, e.w, e.h);
+  });
+}
+
+function moveEnemies() {
+  enemies.forEach(e => {
+    if (e.alive) e.x += Math.sin(Date.now() / 500) * 0.5;
+  });
+
+  // Randomly shoot
+  if (Math.random() < 0.02) {
+    let shooters = enemies.filter(e => e.alive);
+    if (shooters.length > 0) {
+      let e = shooters[Math.floor(Math.random() * shooters.length)];
+      enemyBullets.push({ x: e.x + e.w / 2, y: e.y + e.h });
+    }
+  }
+}
+
+function updateBullets() {
+  player.bullets.forEach(b => b.y -= 5);
+  player.bullets = player.bullets.filter(b => b.y > 0);
+
+  enemyBullets.forEach(b => b.y += 3);
+  enemyBullets = enemyBullets.filter(b => b.y < canvas.height);
+}
+
+function drawBullets() {
+  ctx.fillStyle = "white";
+  player.bullets.forEach(b => ctx.fillRect(b.x, b.y, 4, 10));
+  ctx.fillStyle = "orange";
+  enemyBullets.forEach(b => ctx.fillRect(b.x, b.y, 4, 10));
+}
+
+function checkCollisions() {
+  player.bullets.forEach(b => {
+    enemies.forEach(e => {
+      if (e.alive && b.x < e.x + e.w && b.x + 4 > e.x && b.y < e.y + e.h && b.y + 10 > e.y) {
+        e.alive = false;
+        b.y = -10;
+      }
+    });
+  });
+
+  enemyBullets.forEach(b => {
+    if (b.x < player.x + player.w && b.x + 4 > player.x && b.y < player.y + player.h && b.y + 10 > player.y) {
+      alert("Game Over!");
+      location.reload();
+    }
+  });
+}
+
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  drawPlayer();
+  drawEnemies();
+  drawBullets();
+}
+
+function update() {
+  if (keys.left) player.x -= 5;
+  if (keys.right) player.x += 5;
+  if (keys.fire && Date.now() - lastFire > 300) {
+    player.bullets.push({ x: player.x + player.w / 2 - 2, y: player.y });
+    lastFire = Date.now();
+  }
+
+  player.x = Math.max(0, Math.min(canvas.width - player.w, player.x));
+  moveEnemies();
+  updateBullets();
+  checkCollisions();
+}
+
+function gameLoop() {
+  update();
+  draw();
+  requestAnimationFrame(gameLoop);
+}
+
+gameLoop();
+</script>
+</body>
+</html>
