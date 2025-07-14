@@ -19,15 +19,18 @@
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
-const player = { x: 375, y: 550, w: 50, h: 20, speed: 5, bullets: [] };
+const player = { x: 375, y: 550, w: 50, h: 20, speed: 5, bullets: [], lives: 3 };
 let keys = {};
 let enemies = [];
 let enemyDirection = 1;
 let enemySpeed = 1;
 let enemyBullets = [];
+let shields = [];
 let score = 0;
+let wave = 1;
+const enemyShapes = ["triangle", "rect", "circle"];
+const enemyColors = ["red", "yellow", "cyan"];
 
-// Ljud
 const shootSound = new Audio("https://www.soundjay.com/button/sounds/button-16.mp3");
 const hitSound = new Audio("https://www.soundjay.com/button/sounds/button-10.mp3");
 const music = new Audio("https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3");
@@ -38,10 +41,19 @@ function startMusic() {
   music.play();
 }
 
-for (let i = 0; i < 5; i++) {
-  for (let j = 0; j < 10; j++) {
-    enemies.push({ x: 60 + j * 60, y: 40 + i * 40, w: 30, h: 20, alive: true });
+function createEnemies() {
+  enemies = [];
+  for (let i = 0; i < 5; i++) {
+    for (let j = 0; j < 10; j++) {
+      enemies.push({ x: 60 + j * 60, y: 40 + i * 40, w: 30, h: 20, alive: true });
+    }
   }
+}
+
+createEnemies();
+
+for (let i = 0; i < 3; i++) {
+  shields.push({ x: 150 + i * 200, y: 450, w: 60, h: 20, hp: 3 });
 }
 
 document.addEventListener("keydown", e => keys[e.code] = true);
@@ -111,12 +123,38 @@ function checkCollisions() {
     });
   });
 
+  if (enemies.every(e => !e.alive)) {
+    enemySpeed += 0.5;
+    wave++;
+    createEnemies();
+  }
+
   enemyBullets.forEach(b => {
     if (b.x < player.x + player.w && b.x + 4 > player.x && b.y < player.y + player.h && b.y + 10 > player.y) {
-      alert("Game Over! Score: " + score);
-      location.reload();
+      b.y = -10;
+      player.lives--;
+      if (player.lives <= 0) {
+        alert("Game Over! Score: " + score);
+        location.reload();
+      }
     }
   });
+
+  shields.forEach(shield => {
+    player.bullets.forEach(b => {
+      if (b.x < shield.x + shield.w && b.x + 4 > shield.x && b.y < shield.y + shield.h && b.y + 10 > shield.y) {
+        b.y = -10;
+      }
+    });
+    enemyBullets.forEach(b => {
+      if (b.x < shield.x + shield.w && b.x + 4 > shield.x && b.y < shield.y + shield.h && b.y + 10 > shield.y) {
+        b.y = -10;
+        shield.hp--;
+      }
+    });
+  });
+
+  shields = shields.filter(s => s.hp > 0);
 }
 
 function draw() {
@@ -128,17 +166,37 @@ function draw() {
   ctx.fillStyle = "white";
   player.bullets.forEach(b => ctx.fillRect(b.x, b.y, 4, 10));
 
-  ctx.fillStyle = "red";
+  let shape = enemyShapes[(wave - 1) % enemyShapes.length];
+  let color = enemyColors[(wave - 1) % enemyColors.length];
+  ctx.fillStyle = color;
   enemies.forEach(e => {
-    if (e.alive) ctx.fillRect(e.x, e.y, e.w, e.h);
+    if (e.alive) {
+      ctx.beginPath();
+      if (shape === "triangle") {
+        ctx.moveTo(e.x + e.w / 2, e.y);
+        ctx.lineTo(e.x, e.y + e.h);
+        ctx.lineTo(e.x + e.w, e.y + e.h);
+        ctx.closePath();
+      } else if (shape === "rect") {
+        ctx.rect(e.x, e.y, e.w, e.h);
+      } else if (shape === "circle") {
+        ctx.arc(e.x + e.w / 2, e.y + e.h / 2, e.w / 2, 0, Math.PI * 2);
+      }
+      ctx.fill();
+    }
   });
 
   ctx.fillStyle = "orange";
   enemyBullets.forEach(b => ctx.fillRect(b.x, b.y, 4, 10));
 
+  ctx.fillStyle = "green";
+  shields.forEach(s => ctx.fillRect(s.x, s.y, s.w, s.h));
+
   ctx.fillStyle = "white";
   ctx.font = "20px Arial";
   ctx.fillText("Score: " + score, 10, 20);
+  ctx.fillText("Lives: " + player.lives, 700, 20);
+  ctx.fillText("Wave: " + wave, 350, 20);
 }
 
 function gameLoop() {
