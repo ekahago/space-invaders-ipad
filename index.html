@@ -5,10 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#080d1c">
   <title>Space Shooter · Orbital Defense</title>
-  <link rel="stylesheet" href="styles.css?v=orbital1">
-  <script src="audio.js?v=orbital1" defer></script>
-  <script src="rendering.js?v=orbital1" defer></script>
-  <script src="game.js?v=orbital1" defer></script>
+  <link rel="stylesheet" href="styles.css?v=orbital3">
+  <script src="audio.js?v=orbital3" defer></script>
+  <script src="rendering.js?v=orbital3" defer></script>
+  <script src="game.js?v=orbital3" defer></script>
 </head>
 <body>
 <main>
@@ -20,15 +20,21 @@
     <div><span>LIV</span><strong id="livesValue">♥ ♥ ♥</strong></div>
     <div><span>VAPEN</span><strong id="powerValue">I</strong></div>
   </section>
+  <div class="mission-status"><span id="missionValue">SEKTOR 1 · ORBIT</span><span id="buffValue">Fånga bonusar för nya vapen</span></div>
   <div class="board">
     <canvas id="gameCanvas" width="800" height="600" aria-label="Spelyta för Space Shooter">Din webbläsare behöver stöd för canvas.</canvas>
     <div id="overlay" class="overlay">
       <span class="eyebrow">JORDENS SISTA FÖRSVARSLINJE</span>
       <div class="mission-icon" aria-hidden="true">✦</div>
       <h2 id="message" role="status">Redo för uppdraget?</h2>
-      <p>Håll linjen. Stoppa invasionen.</p>
+      <p id="overlaySubtitle">Håll linjen. Stoppa invasionen.</p>
+      <div id="results" class="results" hidden aria-label="Resultat">
+        <div><span>POÄNG</span><strong id="resultScore">0</strong></div><div><span>REKORD</span><strong id="resultBest">0</strong></div>
+        <div><span>NÅDD VÅG</span><strong id="resultWave">1</strong></div><div><span>BESEGRADE FIENDER</span><strong id="resultKills">0</strong></div>
+        <div><span>BOSSAR</span><strong id="resultBosses">0</strong></div><div><span>FÅNGADE BONUSAR</span><strong id="resultBonuses">0</strong></div>
+      </div>
       <button id="playButton" class="primary">Starta spel <span aria-hidden="true">↗</span></button>
-      <span class="overlay-note">3 LIV · OÄNDLIGA VÅGOR · DITT NYA REKORD</span>
+      <span class="overlay-note">3 LIV · BONUSVAPEN · BOSS VAR FEMTE VÅG</span>
     </div>
     <span class="board-corner" aria-hidden="true">SEKTOR 7G / LIVE</span>
   </div>
@@ -46,11 +52,13 @@
       <select id="musicSelect" aria-label="Musikspår"><option value="1">Musik 1 · Orbit</option><option value="2">Musik 2 · Puls</option><option value="3">Musik 3 · Nova</option><option value="4">Musik 4 · Signal</option></select>
       <button id="musicButton" aria-pressed="false">Musik: av</button>
     </div>
+    <p class="bonus-guide"><b>T</b> Trippelskott · <b>S</b> Skydd · <b>L</b> Laser<br>Fånga kapslarna med ditt skepp. Boss på våg 5, 10, 15…</p>
     <p class="help">Dator: ← → eller A/D · Mellanslag: skjut · P/Esc: paus<br>iPad: håll inne pilarna och Skjut samtidigt.</p>
     <p id="audioStatus" role="status"></p>
   </section>
-  <footer>BYGGT FÖR IPAD & DATOR <span>ORBITAL / V2</span></footer>
+  <footer>BYGGT FÖR IPAD & DATOR <span>ORBITAL / V3</span></footer>
 </main>
 </body>
 </html>
+
 

@@ -39,3 +39,16 @@ footer { display:flex; justify-content:space-between; padding:8px 0; font:8px ui
 @media (max-height:540px) and (orientation:landscape) { body { padding:10px 16px; } .masthead { margin-bottom:9px; } h1 { font-size:22px; } .hud { max-width:460px; margin:0 auto 9px; padding:8px 12px; } .hud strong { font-size:15px; } .board { width:min(64vw,calc((100svh - 135px) * 4 / 3)); min-width:0; } .controls { position:fixed; top:42%; left:12px; right:12px; pointer-events:none; } .movement { flex-direction:column; gap:10px; } .controls button { pointer-events:auto; min-width:56px; min-height:52px; padding:8px; } .control-label { display:none; } #fireButton { min-width:90px; } .settings { margin-top:64px; } .mission-icon,.overlay-note,.overlay>p { display:none; } .overlay .primary { margin-top:14px; } }
 @media (prefers-reduced-motion:reduce) { .controls button.active { transform:none; } }
 
+
+
+.mission-status { display:flex; justify-content:space-between; gap:12px; margin:0 0 12px; font:10px ui-monospace,monospace; line-height:1.6; color:#91aec5; }
+#buffValue { color:#a5e8d3; text-align:right; }
+.results { display:grid; grid-template-columns:1fr 1fr; gap:8px 28px; text-align:left; margin:8px 0 18px; padding:12px 20px; border:1px solid #375169; border-radius:10px; background:#071323b8; }
+.results[hidden] { display:none; }
+.results span { display:block; font:8px ui-monospace,monospace; letter-spacing:1px; color:#94a8c3; }
+.results strong { display:block; font:700 22px ui-monospace,monospace; color:#8ceafa; }
+.overlay[data-mode=over] .mission-icon,.overlay[data-mode=over] .overlay-note { display:none; }
+.overlay[data-mode=over] #overlaySubtitle { margin:6px 0; }
+.bonus-guide { color:#98aec5; font-size:11px; line-height:1.8; }.bonus-guide b { display:inline-block; color:#b9f4e0; padding:0 4px; border:1px solid #386658; border-radius:3px; }
+@media (max-width:520px) { .mission-status { font-size:8px; }.overlay[data-mode=over]>.eyebrow,.overlay[data-mode=over] #overlaySubtitle { display:none; }.results { gap:5px 20px; padding:8px 16px; margin:8px 0; }.results strong { font-size:17px; }.results span { font-size:7px; }.overlay[data-mode=over] h2 { font-size:20px; } }
+@media (max-height:540px) and (orientation:landscape) { .mission-status { max-width:460px; margin:0 auto 8px; font-size:8px; }.board { width:min(64vw,calc((100svh - 158px) * 4 / 3)); }.overlay[data-mode=over]>.eyebrow,.overlay[data-mode=over] #overlaySubtitle { display:none; }.results { grid-template-columns:repeat(3,1fr); gap:5px 12px; margin:5px 0; padding:7px 12px; }.results strong { font-size:15px; }.results span { font-size:6px; }.overlay[data-mode=over] h2 { font-size:18px; }.overlay[data-mode=over] .primary { min-height:36px; padding:8px 15px; margin-top:4px; } }
