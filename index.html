@@ -52,7 +52,7 @@
 <div class="toolbar">
   <button id="pauseButton" disabled>Paus</button>
   <button id="restartButton">Börja om</button>
-  <button id="soundButton" aria-pressed="false">Ljudeffekter: av</button>
+  <button id="soundButton" aria-pressed="true">Ljudeffekter: på</button>
   <select id="musicSelect" aria-label="Musikspår">
     <option value="1">Musik 1</option><option value="2">Musik 2</option>
     <option value="3">Musik 3</option><option value="4">Musik 4</option>
@@ -117,7 +117,7 @@ const enemyColors = ["red", "yellow", "cyan"];
 // Generate audio locally: no external MP3 downloads or per-element iOS unlocks.
 const shootSound = "shoot", hitSound = "hit", shieldHitSound = "shield", explosionSound = "explosion";
 let audioContext;
-let soundsEnabled = false;
+let soundsEnabled = true;
 let musicEnabled = false;
 let musicTimer = null;
 let musicStep = 0;
@@ -152,14 +152,21 @@ async function unlockAudio() {
 }
 function tone(frequency, duration, type, volume, when, endFrequency, group = "effect") {
   if (!audioContext || audioContext.state !== "running") return;
+  // Leave a small scheduling margin for immediate game sounds on mobile browsers.
+  when = Math.max(when, audioContext.currentTime + 0.015);
   const oscillator = audioContext.createOscillator();
   const gain = audioContext.createGain();
   oscillator.type = type;
   oscillator.frequency.setValueAtTime(frequency, when);
   if (endFrequency) oscillator.frequency.exponentialRampToValueAtTime(endFrequency, when + duration);
   gain.gain.setValueAtTime(0.0001, when);
-  gain.gain.exponentialRampToValueAtTime(volume, when + 0.008);
-  gain.gain.exponentialRampToValueAtTime(0.0001, when + duration);
+  if (group === "effect") {
+    gain.gain.linearRampToValueAtTime(volume, when + 0.008);
+    gain.gain.linearRampToValueAtTime(0, when + duration);
+  } else {
+    gain.gain.exponentialRampToValueAtTime(volume, when + 0.008);
+    gain.gain.exponentialRampToValueAtTime(0.0001, when + duration);
+  }
   oscillator.connect(gain);
   gain.connect(audioContext.destination);
   voices.set(oscillator, group);
@@ -177,10 +184,10 @@ function stopVoices(group) {
 function effect(kind) {
   if (!soundsEnabled || !audioContext || audioContext.state !== "running") return;
   const now = audioContext.currentTime;
-  if (kind === "shoot") tone(900, 0.12, "square", 0.055, now, 180);
-  else if (kind === "hit") tone(540, 0.10, "triangle", 0.12, now, 110);
-  else if (kind === "shield") tone(170, 0.18, "square", 0.07, now, 45);
-  else tone(95, 0.28, "sawtooth", 0.10, now, 25);
+  if (kind === "shoot") tone(1100, 0.16, "square", 0.13, now, 240);
+  else if (kind === "hit") tone(720, 0.18, "triangle", 0.22, now, 190);
+  else if (kind === "shield") tone(330, 0.22, "square", 0.13, now, 100);
+  else tone(280, 0.32, "sawtooth", 0.18, now, 70);
 }
 function playExplosion() { effect(explosionSound); }
 function stopMusic() {
@@ -210,8 +217,11 @@ function syncMusic() {
   musicButton.textContent = musicEnabled ? "Musik: på" : "Musik: av";
   musicButton.setAttribute("aria-pressed", String(musicEnabled));
 }
-async function resumeGameAudio() {
-  if ((soundsEnabled || musicEnabled) && await unlockAudio()) syncMusic();
+async function resumeGameAudio(testSound = false) {
+  if ((soundsEnabled || musicEnabled) && await unlockAudio()) {
+    syncMusic();
+    if (testSound && soundsEnabled) effect(shootSound);
+  }
 }
 async function changeMusic() {
   stopMusic(); musicStep = 0;
@@ -274,6 +284,7 @@ for (const [id, action] of [["leftButton", "left"], ["rightButton", "right"], ["
     if (e.pointerType === "mouse" && e.button !== 0) return;
     e.preventDefault();
     if (state !== "playing") return;
+    if ((soundsEnabled || musicEnabled) && (!audioContext || audioContext.state !== "running")) resumeGameAudio();
     button.setPointerCapture(e.pointerId);
     pointers.set(e.pointerId, action);
     button.classList.add("active");
@@ -288,9 +299,14 @@ for (const [id, action] of [["leftButton", "left"], ["rightButton", "right"], ["
   button.addEventListener("contextmenu", e => e.preventDefault());
 }
 function held(action) { return [...pointers.values()].includes(action); }
-playButton.addEventListener("click", () => { resumeGameAudio(); state === "paused" ? setState("playing") : restart(); playButton.blur(); });
+playButton.addEventListener("click", () => {
+  const audioReady = resumeGameAudio(state !== "paused");
+  state === "paused" ? setState("playing") : restart();
+  playButton.blur();
+  return audioReady;
+});
 pauseButton.addEventListener("click", () => setState("paused"));
-document.getElementById("restartButton").addEventListener("click", e => { resumeGameAudio(); restart(); e.currentTarget.blur(); });
+document.getElementById("restartButton").addEventListener("click", e => { resumeGameAudio(true); restart(); e.currentTarget.blur(); });
 window.addEventListener("blur", () => { if (state === "playing") setState("paused"); else clearInput(); });
 document.addEventListener("visibilitychange", () => { if (document.hidden && state === "playing") setState("paused"); });
 function checkPowerLevel() {
