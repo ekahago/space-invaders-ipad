@@ -2,30 +2,65 @@
 <html lang="sv">
 <head>
   <meta charset="UTF-8">
-  <title>Space Shooter – PC version</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Space Shooter – iPad & dator</title>
   <style>
-    canvas {
-      background: black;
-      display: block;
-      margin: auto;
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 12px; padding-bottom: max(12px, env(safe-area-inset-bottom)); background: #101624; color: #eef4ff; font: 16px system-ui, sans-serif; text-align: center; }
+    main { max-width: 840px; margin: auto; }
+    h1 { font-size: 1.3rem; margin: 4px 0 8px; }
+    canvas { background: black; display: block; width: 100%; height: auto; border: 1px solid #40516b; border-radius: 8px; }
+    .board { position: relative; width: min(100%, calc((100svh - 240px) * 4 / 3)); min-width: 240px; margin: auto; }
+    .overlay { position: absolute; inset: 0; background: #070d19da; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; border-radius: 8px; }
+    .overlay[hidden] { display: none; }
+    .controls, .toolbar { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+    button, select { font: inherit; border: 1px solid #687b96; border-radius: 8px; padding: 10px 16px; min-height: 44px; background: #22324c; color: white; }
+    button { cursor: pointer; }
+    button:focus-visible, select:focus-visible { outline: 3px solid #77dcff; }
+    .controls button { min-width: 80px; min-height: 56px; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+    .controls button.active { background: #436898; }
+    #fireButton { min-width: 130px; background: #245a48; }
+    p { font-size: .85rem; margin: 8px 0; }
+    #audioStatus { min-height: 1.2em; }
+    @media (max-height: 540px) and (orientation: landscape) {
+      body { padding: 4px; } h1, .help { display: none; }
+      .board { width: min(68vw, calc((100svh - 94px) * 4 / 3)); }
+      .controls { position: fixed; inset: 35% 8px auto; justify-content: space-between; pointer-events: none; }
+      .controls button { pointer-events: auto; min-width: 52px; padding: 8px; }
+      #fireButton { min-width: 72px; }
+      .toolbar { margin-top: 4px; gap: 4px; } button, select { padding: 6px; }
     }
   </style>
 </head>
 <body>
 
-<canvas id="gameCanvas" width="800" height="600"></canvas>
-
-<select id="musicSelect" onchange="changeMusic()" style="display: block; margin: auto;">
-  <option value="1">Musik 1</option>
-  <option value="2">Musik 2</option>
-  <option value="3">Musik 3</option>
-  <option value="4">Musik 4</option>
-</select>
-
-<button onclick="startMusic()" style="display: block; margin: auto;">Starta Musik</button>
-<button onclick="toggleMusic()" style="display: block; margin: auto;">Stäng av/På Musik</button>
-<button onclick="enableSounds()" style="display: block; margin: auto;">Aktivera Ljud</button>
-
+<main>
+<h1>Space Shooter</h1>
+<div class="board">
+  <canvas id="gameCanvas" width="800" height="600" aria-label="Spelyta för Space Shooter">Din webbläsare behöver stöd för canvas.</canvas>
+  <div id="overlay" class="overlay">
+    <strong id="message" role="status">Redo att försvara jorden?</strong>
+    <button id="playButton">Starta spel</button>
+  </div>
+</div>
+<div class="controls" aria-label="Spelkontroller">
+  <button id="leftButton" aria-label="Flytta vänster">◀</button>
+  <button id="rightButton" aria-label="Flytta höger">▶</button>
+  <button id="fireButton">Skjut</button>
+</div>
+<div class="toolbar">
+  <button id="pauseButton" disabled>Paus</button>
+  <button id="restartButton">Börja om</button>
+  <button id="soundButton" aria-pressed="false">Ljudeffekter: av</button>
+  <select id="musicSelect" aria-label="Musikspår">
+    <option value="1">Musik 1</option><option value="2">Musik 2</option>
+    <option value="3">Musik 3</option><option value="4">Musik 4</option>
+  </select>
+  <button id="musicButton" aria-pressed="false">Musik: av</button>
+</div>
+<p class="help">Dator: ← → eller A/D, mellanslag för skott, P/Esc för paus. iPad: håll inne knapparna – styr och skjut samtidigt.</p>
+<p id="audioStatus" role="status"></p>
+</main>
 <script>
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
@@ -39,6 +74,41 @@ let enemyBullets = [];
 let shields = [];
 let score = 0;
 let wave = 1;
+let state = "ready";
+let cooldown = 0;
+let invulnerable = 0;
+let nextPowerScore = 1000;
+let accumulator = 0;
+let lastTime = null;
+const STEP = 1 / 60;
+const overlay = document.getElementById("overlay");
+const message = document.getElementById("message");
+const pauseButton = document.getElementById("pauseButton");
+const playButton = document.getElementById("playButton");
+const pointers = new Map();
+function clearInput() {
+  keys = {};
+  pointers.clear();
+  document.querySelectorAll(".controls button").forEach(b => b.classList.remove("active"));
+}
+function setState(value) {
+  state = value;
+  clearInput();
+  accumulator = 0;
+  lastTime = null;
+  overlay.hidden = value === "playing";
+  pauseButton.disabled = value !== "playing";
+  if (value === "paused") { message.textContent = "Paus"; playButton.textContent = "Fortsätt"; }
+  if (value === "over") { message.textContent = "Game over! Poäng: " + score; playButton.textContent = "Spela igen"; }
+  syncMusic();
+}
+function restart() {
+  Object.assign(player, { x: 375, bullets: [], lives: 3, powerLevel: 0 });
+  enemyBullets = [];
+  score = 0; wave = 1; enemySpeed = 1; enemyDirection = 1;
+  cooldown = 0; invulnerable = 0; nextPowerScore = 1000;
+  createEnemies(); createShields(); setState("playing");
+}
 
 const enemyShapes = ["triangle", "rect", "circle"];
 const enemyColors = ["red", "yellow", "cyan"];
@@ -56,45 +126,52 @@ const musicTracks = [
 ];
 
 let music = musicTracks[0];
-music.loop = true;
-music.volume = 0.1;
-shootSound.volume = 0.7;
-hitSound.volume = 0.7;
-shieldHitSound.volume = 0.7;
-explosionSound.volume = 1.0;
-
-function enableSounds() {
-  shootSound.play().catch(() => {});
-  hitSound.play().catch(() => {});
-  shieldHitSound.play().catch(() => {});
-  explosionSound.play().catch(() => {});
+let musicEnabled = false;
+let soundsEnabled = false;
+const soundButton = document.getElementById("soundButton");
+const musicButton = document.getElementById("musicButton");
+const audioStatus = document.getElementById("audioStatus");
+musicTracks.forEach(track => { track.loop = true; track.volume = 0.1; track.preload = "none"; });
+const effects = [shootSound, hitSound, shieldHitSound, explosionSound];
+effects.forEach(effect => { effect.volume = 0.6; effect.preload = "none"; });
+function safePlay(audio) {
+  const result = audio.play();
+  if (result) result.catch(() => {
+    audioStatus.textContent = "Ljudet kunde inte spelas. Kontrollera anslutningen och tryck på ljudknappen igen.";
+  });
 }
-
-function playExplosion() {
-  explosionSound.currentTime = 0;
-  explosionSound.play();
+function effect(audio) {
+  if (!soundsEnabled) return;
+  audio.currentTime = 0;
+  safePlay(audio);
 }
-function startMusic() {
-  music.play();
+function playExplosion() { effect(explosionSound); }
+function syncMusic() {
+  musicTracks.forEach(track => { if (track !== music || !musicEnabled || state !== "playing") track.pause(); });
+  if (musicEnabled && state === "playing") safePlay(music);
+  musicButton.textContent = musicEnabled ? "Musik: på" : "Musik: av";
+  musicButton.setAttribute("aria-pressed", String(musicEnabled));
 }
-
-function toggleMusic() {
-  if (music.paused) {
-    music.play();
-  } else {
-    music.pause();
-  }
-}
-
 function changeMusic() {
   music.pause();
-  const select = document.getElementById("musicSelect");
-  const index = parseInt(select.value) - 1;
-  music = musicTracks[index];
-  music.loop = true;
-  music.volume = 0.1;
-  if (!music.paused) music.play();
+  music = musicTracks[Number(document.getElementById("musicSelect").value) - 1];
+  syncMusic();
 }
+soundButton.addEventListener("click", () => {
+  soundsEnabled = !soundsEnabled;
+  audioStatus.textContent = "";
+  soundButton.textContent = soundsEnabled ? "Ljudeffekter: på" : "Ljudeffekter: av";
+  soundButton.setAttribute("aria-pressed", String(soundsEnabled));
+  // Unlock each HTML audio element during the user's gesture on iOS.
+  if (soundsEnabled) effects.forEach(audio => {
+    audio.muted = true;
+    const result = audio.play();
+    if (result) result.then(() => { audio.pause(); audio.currentTime = 0; audio.muted = false; })
+      .catch(() => { audio.muted = false; audioStatus.textContent = "Vissa ljudeffekter kunde inte laddas."; });
+  });
+});
+musicButton.addEventListener("click", () => { musicEnabled = !musicEnabled; audioStatus.textContent = ""; syncMusic(); });
+document.getElementById("musicSelect").addEventListener("change", changeMusic);
 
 function createEnemies() {
   enemies = [];
@@ -115,31 +192,59 @@ function createShields() {
 createEnemies();
 createShields();
 
-document.addEventListener("keydown", e => keys[e.code] = true);
-document.addEventListener("keyup", e => keys[e.code] = false);
-
+const gameKeys = new Set(["ArrowLeft", "ArrowRight", "KeyA", "KeyD", "Space", "KeyP", "Escape"]);
+document.addEventListener("keydown", e => {
+  if (/^(SELECT|INPUT|TEXTAREA)$/.test(e.target.tagName) || (e.target.tagName === "BUTTON" && e.code === "Space")) return;
+  if (!gameKeys.has(e.code)) return;
+  e.preventDefault();
+  if (e.code === "KeyP" || e.code === "Escape") {
+    if (!e.repeat && (state === "playing" || state === "paused")) setState(state === "playing" ? "paused" : "playing");
+  } else if (state === "playing") keys[e.code] = true;
+});
+document.addEventListener("keyup", e => { delete keys[e.code]; });
+for (const [id, action] of [["leftButton", "left"], ["rightButton", "right"], ["fireButton", "fire"]]) {
+  const button = document.getElementById(id);
+  button.addEventListener("pointerdown", e => {
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    e.preventDefault();
+    if (state !== "playing") return;
+    button.setPointerCapture(e.pointerId);
+    pointers.set(e.pointerId, action);
+    button.classList.add("active");
+  });
+  const release = e => {
+    pointers.delete(e.pointerId);
+    if (![...pointers.values()].includes(action)) button.classList.remove("active");
+  };
+  button.addEventListener("pointerup", release);
+  button.addEventListener("pointercancel", release);
+  button.addEventListener("lostpointercapture", release);
+  button.addEventListener("contextmenu", e => e.preventDefault());
+}
+function held(action) { return [...pointers.values()].includes(action); }
+playButton.addEventListener("click", () => { state === "paused" ? setState("playing") : restart(); playButton.blur(); });
+pauseButton.addEventListener("click", () => setState("paused"));
+document.getElementById("restartButton").addEventListener("click", e => { restart(); e.currentTarget.blur(); });
+window.addEventListener("blur", () => { if (state === "playing") setState("paused"); else clearInput(); });
+document.addEventListener("visibilitychange", () => { if (document.hidden && state === "playing") setState("paused"); });
 function checkPowerLevel() {
-  if (score >= 2000) {
-    player.powerLevel = 2;
-  } else if (score >= 1000) {
-    player.powerLevel = 1;
-  } else {
-    player.powerLevel = 0;
+  while (score >= nextPowerScore) {
+    player.powerLevel = Math.min(2, player.powerLevel + 1);
+    nextPowerScore += 1000;
   }
 }
 
 function fire() {
-  let fireRate = player.powerLevel === 2 ? 150 : 300;
-  if (!player.lastFire || Date.now() - player.lastFire > fireRate) {
+  let fireRate = player.powerLevel === 2 ? 0.15 : 0.3;
+  if (cooldown <= 0) {
     if (player.powerLevel >= 1) {
       player.bullets.push({ x: player.x + 10, y: player.y });
       player.bullets.push({ x: player.x + player.w - 14, y: player.y });
     } else {
       player.bullets.push({ x: player.x + player.w / 2 - 2, y: player.y });
     }
-    player.lastFire = Date.now();
-    shootSound.currentTime = 0;
-    shootSound.play();
+    cooldown = fireRate;
+    effect(shootSound);
   }
 }
 
@@ -170,12 +275,11 @@ function moveEnemies() {
 function checkCollisions() {
   player.bullets.forEach(b => {
     enemies.forEach(e => {
-      if (e.alive && b.x < e.x + e.w && b.x + 4 > e.x && b.y < e.y + e.h && b.y + 10 > e.y) {
+      if (!b.dead && e.alive && b.x < e.x + e.w && b.x + 4 > e.x && b.y < e.y + e.h && b.y + 10 > e.y) {
         e.alive = false;
-        b.y = -10;
+        b.dead = true;
         score += 100 * wave;
-        hitSound.currentTime = 0;
-        hitSound.play();
+        effect(hitSound);
         playExplosion();
       }
     });
@@ -186,49 +290,54 @@ function checkCollisions() {
     wave++;
     createEnemies();
     createShields();
+    player.bullets = []; enemyBullets = [];
+    enemyDirection = 1;
   }
 
   enemyBullets.forEach(b => {
-    if (b.x < player.x + player.w && b.x + 4 > player.x && b.y < player.y + player.h && b.y + 10 > player.y) {
-      b.y = -10;
+    if (!b.dead && b.x < player.x + player.w && b.x + 4 > player.x && b.y < player.y + player.h && b.y + 10 > player.y) {
+      b.dead = true;
+      if (invulnerable > 0) return;
+      invulnerable = 1;
       player.lives--;
-      shieldHitSound.currentTime = 0;
-      shieldHitSound.play();
+      effect(shieldHitSound);
       playExplosion();
       if (player.powerLevel > 0) player.powerLevel--;
       if (player.lives <= 0) {
-        alert("Game Over! Score: " + score);
-        location.reload();
+        setState("over");
       }
     }
   });
 
   shields.forEach(shield => {
     player.bullets.forEach(b => {
-      if (b.x < shield.x + shield.w && b.x + 4 > shield.x && b.y < shield.y + shield.h && b.y + 10 > shield.y) {
-        b.y = -10;
+      if (!b.dead && shield.hp > 0 && b.x < shield.x + shield.w && b.x + 4 > shield.x && b.y < shield.y + shield.h && b.y + 10 > shield.y) {
+        b.dead = true;
       }
     });
     enemyBullets.forEach(b => {
-      if (b.x < shield.x + shield.w && b.x + 4 > shield.x && b.y < shield.y + shield.h && b.y + 10 > shield.y) {
-        b.y = -10;
+      if (!b.dead && shield.hp > 0 && b.x < shield.x + shield.w && b.x + 4 > shield.x && b.y < shield.y + shield.h && b.y + 10 > shield.y) {
+        b.dead = true;
         shield.hp--;
-        shieldHitSound.currentTime = 0;
-        shieldHitSound.play();
+        effect(shieldHitSound);
         playExplosion();
       }
     });
   });
 
   shields = shields.filter(s => s.hp > 0);
+  player.bullets = player.bullets.filter(b => !b.dead);
+  enemyBullets = enemyBullets.filter(b => !b.dead);
 }
 
 function update() {
-  if (keys["ArrowLeft"]) player.x -= player.speed;
-  if (keys["ArrowRight"]) player.x += player.speed;
+  cooldown = Math.max(0, cooldown - STEP);
+  invulnerable = Math.max(0, invulnerable - STEP);
+  if (keys["ArrowLeft"] || keys["KeyA"] || held("left")) player.x -= player.speed;
+  if (keys["ArrowRight"] || keys["KeyD"] || held("right")) player.x += player.speed;
   player.x = Math.max(0, Math.min(canvas.width - player.w, player.x));
 
-  if (keys["Space"]) fire();
+  if (keys["Space"] || held("fire")) fire();
 
   player.bullets.forEach(b => b.y -= 7);
   player.bullets = player.bullets.filter(b => b.y > 0);
@@ -238,6 +347,8 @@ function update() {
 
   moveEnemies();
   checkCollisions();
+  if (enemies.some(e => e.alive && e.y + e.h >= player.y)) setState("over");
+  if (state !== "playing") return;
   enemyFire();
   checkPowerLevel();
 }
@@ -245,7 +356,7 @@ function update() {
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  ctx.fillStyle = "lime";
+  ctx.fillStyle = invulnerable > 0 && Math.floor(invulnerable * 12) % 2 ? "#456" : "lime";
   ctx.fillRect(player.x, player.y, player.w, player.h);
 
   ctx.fillStyle = "white";
@@ -266,7 +377,7 @@ function draw() {
       } else if (shape === "rect") {
         ctx.rect(e.x, e.y, e.w, e.h);
       } else if (shape === "circle") {
-        ctx.arc(e.x + e.w / 2, e.y + e.h / 2, e.w / 2, 0, Math.PI * 2);
+        ctx.ellipse(e.x + e.w / 2, e.y + e.h / 2, e.w / 2, e.h / 2, 0, 0, Math.PI * 2);
       }
       ctx.fill();
     }
@@ -286,13 +397,21 @@ function draw() {
   ctx.fillText("Power: " + player.powerLevel, 350, 50);
 }
 
-function gameLoop() {
-  update();
+function gameLoop(timestamp) {
+  if (lastTime === null) lastTime = timestamp;
+  if (state === "playing") {
+    accumulator += Math.min((timestamp - lastTime) / 1000, 0.1);
+    while (accumulator + 1e-9 >= STEP && state === "playing") {
+      accumulator -= STEP;
+      update();
+    }
+  }
+  lastTime = timestamp;
   draw();
   requestAnimationFrame(gameLoop);
 }
-
-gameLoop();
+draw();
+requestAnimationFrame(gameLoop);
 </script>
 
 </body>
