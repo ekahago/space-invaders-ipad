@@ -3,498 +3,54 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Space Shooter – iPad & dator</title>
-  <style>
-    * { box-sizing: border-box; }
-    body { margin: 0; padding: 12px; padding-bottom: max(12px, env(safe-area-inset-bottom)); background: #101624; color: #eef4ff; font: 16px system-ui, sans-serif; text-align: center; }
-    main { max-width: 840px; margin: auto; }
-    h1 { font-size: 1.3rem; margin: 4px 0 8px; }
-    canvas { background: black; display: block; width: 100%; height: auto; border: 1px solid #40516b; border-radius: 8px; }
-    .board { position: relative; width: min(100%, calc((100svh - 240px) * 4 / 3)); min-width: 240px; margin: auto; }
-    .overlay { position: absolute; inset: 0; background: #070d19da; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; border-radius: 8px; }
-    .overlay[hidden] { display: none; }
-    .controls, .toolbar { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
-    .toolbar { margin-top: 64px; padding-top: 20px; border-top: 1px solid #40516b; }
-    button, select { font: inherit; border: 1px solid #687b96; border-radius: 8px; padding: 10px 16px; min-height: 44px; background: #22324c; color: white; }
-    button { cursor: pointer; }
-    button:focus-visible, select:focus-visible { outline: 3px solid #77dcff; }
-    .controls button { min-width: 80px; min-height: 56px; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
-    .controls button.active { background: #436898; }
-    #fireButton { min-width: 130px; background: #245a48; }
-    p { font-size: .85rem; margin: 8px 0; }
-    #audioStatus { min-height: 1.2em; }
-    @media (max-height: 540px) and (orientation: landscape) {
-      body { padding: 4px; } h1, .help { display: none; }
-      .board { width: min(68vw, calc((100svh - 94px) * 4 / 3)); }
-      .controls { position: fixed; inset: 35% 8px auto; justify-content: space-between; pointer-events: none; }
-      .controls button { pointer-events: auto; min-width: 52px; padding: 8px; }
-      #fireButton { min-width: 72px; }
-      .toolbar { margin-top: 64px; gap: 8px; } button, select { padding: 6px; }
-    }
-  </style>
+  <meta name="theme-color" content="#080d1c">
+  <title>Space Shooter · Orbital Defense</title>
+  <link rel="stylesheet" href="styles.css?v=orbital1">
+  <script src="audio.js?v=orbital1" defer></script>
+  <script src="rendering.js?v=orbital1" defer></script>
+  <script src="game.js?v=orbital1" defer></script>
 </head>
 <body>
-
 <main>
-<h1>Space Shooter</h1>
-<div class="board">
-  <canvas id="gameCanvas" width="800" height="600" aria-label="Spelyta för Space Shooter">Din webbläsare behöver stöd för canvas.</canvas>
-  <div id="overlay" class="overlay">
-    <strong id="message" role="status">Redo att försvara jorden?</strong>
-    <button id="playButton">Starta spel</button>
+  <header class="masthead"><div><span class="eyebrow">ORBITAL DEFENSE / 01</span><h1>SPACE<span>SHOOTER</span></h1></div><span class="system-status"><i></i> SYSTEM ONLINE</span></header>
+  <section class="hud" aria-label="Spelstatus">
+    <div><span>POÄNG</span><strong id="scoreValue">000000</strong></div>
+    <div><span>REKORD</span><strong id="bestValue">000000</strong></div>
+    <div><span>VÅG</span><strong id="waveValue">01</strong></div>
+    <div><span>LIV</span><strong id="livesValue">♥ ♥ ♥</strong></div>
+    <div><span>VAPEN</span><strong id="powerValue">I</strong></div>
+  </section>
+  <div class="board">
+    <canvas id="gameCanvas" width="800" height="600" aria-label="Spelyta för Space Shooter">Din webbläsare behöver stöd för canvas.</canvas>
+    <div id="overlay" class="overlay">
+      <span class="eyebrow">JORDENS SISTA FÖRSVARSLINJE</span>
+      <div class="mission-icon" aria-hidden="true">✦</div>
+      <h2 id="message" role="status">Redo för uppdraget?</h2>
+      <p>Håll linjen. Stoppa invasionen.</p>
+      <button id="playButton" class="primary">Starta spel <span aria-hidden="true">↗</span></button>
+      <span class="overlay-note">3 LIV · OÄNDLIGA VÅGOR · DITT NYA REKORD</span>
+    </div>
+    <span class="board-corner" aria-hidden="true">SEKTOR 7G / LIVE</span>
   </div>
-</div>
-<div class="controls" aria-label="Spelkontroller">
-  <button id="leftButton" aria-label="Flytta vänster">◀</button>
-  <button id="rightButton" aria-label="Flytta höger">▶</button>
-  <button id="fireButton">Skjut</button>
-</div>
-<div class="toolbar">
-  <button id="pauseButton" disabled>Paus</button>
-  <button id="restartButton">Börja om</button>
-  <button id="soundButton" aria-pressed="true">Ljudeffekter: på</button>
-  <select id="musicSelect" aria-label="Musikspår">
-    <option value="1">Musik 1</option><option value="2">Musik 2</option>
-    <option value="3">Musik 3</option><option value="4">Musik 4</option>
-  </select>
-  <button id="musicButton" aria-pressed="false">Musik: av</button>
-</div>
-<p class="help">Dator: ← → eller A/D, mellanslag för skott, P/Esc för paus. iPad: håll inne knapparna – styr och skjut samtidigt.</p>
-<p id="audioStatus" role="status"></p>
+  <div class="controls" aria-label="Spelkontroller">
+    <div class="movement"><button id="leftButton" aria-label="Flytta vänster">◀</button><button id="rightButton" aria-label="Flytta höger">▶</button></div>
+    <span class="control-label">FLYG SÄKERT.<br>SIKTA HÖGT.</span>
+    <button id="fireButton"><span aria-hidden="true">⌖</span> Skjut</button>
+  </div>
+  <section class="settings" aria-label="Spelinställningar">
+    <div class="settings-heading"><span class="eyebrow">KONTROLLPANEL</span><span>PAUS / LJUD</span></div>
+    <div class="toolbar">
+      <button id="pauseButton" disabled>Paus</button>
+      <button id="restartButton">Börja om</button>
+      <button id="soundButton" aria-pressed="true">Ljudeffekter: på</button>
+      <select id="musicSelect" aria-label="Musikspår"><option value="1">Musik 1 · Orbit</option><option value="2">Musik 2 · Puls</option><option value="3">Musik 3 · Nova</option><option value="4">Musik 4 · Signal</option></select>
+      <button id="musicButton" aria-pressed="false">Musik: av</button>
+    </div>
+    <p class="help">Dator: ← → eller A/D · Mellanslag: skjut · P/Esc: paus<br>iPad: håll inne pilarna och Skjut samtidigt.</p>
+    <p id="audioStatus" role="status"></p>
+  </section>
+  <footer>BYGGT FÖR IPAD & DATOR <span>ORBITAL / V2</span></footer>
 </main>
-<script>
-const canvas = document.getElementById("gameCanvas");
-const ctx = canvas.getContext("2d");
-
-const player = { x: 375, y: 550, w: 50, h: 20, speed: 5, bullets: [], lives: 3, powerLevel: 0 };
-let keys = {};
-let enemies = [];
-let enemyDirection = 1;
-let enemySpeed = 1;
-let enemyBullets = [];
-let shields = [];
-let score = 0;
-let wave = 1;
-let state = "ready";
-let cooldown = 0;
-let invulnerable = 0;
-let nextPowerScore = 1000;
-let accumulator = 0;
-let lastTime = null;
-const STEP = 1 / 60;
-const overlay = document.getElementById("overlay");
-const message = document.getElementById("message");
-const pauseButton = document.getElementById("pauseButton");
-const playButton = document.getElementById("playButton");
-const pointers = new Map();
-function clearInput() {
-  keys = {};
-  pointers.clear();
-  document.querySelectorAll(".controls button").forEach(b => b.classList.remove("active"));
-}
-function setState(value) {
-  state = value;
-  clearInput();
-  accumulator = 0;
-  lastTime = null;
-  overlay.hidden = value === "playing";
-  pauseButton.disabled = value !== "playing";
-  if (value === "paused") { message.textContent = "Paus"; playButton.textContent = "Fortsätt"; }
-  if (value === "over") { message.textContent = "Game over! Poäng: " + score; playButton.textContent = "Spela igen"; }
-  syncMusic();
-}
-function restart() {
-  Object.assign(player, { x: 375, bullets: [], lives: 3, powerLevel: 0 });
-  enemyBullets = [];
-  score = 0; wave = 1; enemySpeed = 1; enemyDirection = 1;
-  cooldown = 0; invulnerable = 0; nextPowerScore = 1000;
-  createEnemies(); createShields(); setState("playing");
-}
-
-const enemyShapes = ["triangle", "rect", "circle"];
-const enemyColors = ["red", "yellow", "cyan"];
-
-// Generate audio locally: no external MP3 downloads or per-element iOS unlocks.
-const shootSound = "shoot", hitSound = "hit", shieldHitSound = "shield", explosionSound = "explosion";
-let audioContext;
-let soundsEnabled = true;
-let musicEnabled = false;
-let musicTimer = null;
-let musicStep = 0;
-let nextNoteTime = 0;
-const voices = new Map();
-const soundButton = document.getElementById("soundButton");
-const musicButton = document.getElementById("musicButton");
-const audioStatus = document.getElementById("audioStatus");
-const melodies = [
-  [60, 67, 72, 67, 63, 70, 75, 70],
-  [57, 60, 64, 69, 67, 64, 60, 64],
-  [62, 65, 69, 74, 72, 69, 65, 69],
-  [60, 64, 67, 71, 72, 71, 67, 64]
-];
-async function unlockAudio() {
-  try {
-    if (!audioContext) {
-      const Context = window.AudioContext || window.webkitAudioContext;
-      if (!Context) throw new Error("Web Audio unavailable");
-      // On supported iPads, use media playback rather than the ambient session.
-      try { if (navigator.audioSession) navigator.audioSession.type = "playback"; } catch (_) {}
-      audioContext = new Context();
-    }
-    if (audioContext.state !== "running") await audioContext.resume();
-    if (audioContext.state !== "running") throw new Error("Audio suspended");
-    audioStatus.textContent = "";
-    return true;
-  } catch (_) {
-    audioStatus.textContent = "Ljudet kunde inte starta. Tryck på ljudknappen för att försöka igen.";
-    return false;
-  }
-}
-function tone(frequency, duration, type, volume, when, endFrequency, group = "effect") {
-  if (!audioContext || audioContext.state !== "running") return;
-  // Leave a small scheduling margin for immediate game sounds on mobile browsers.
-  when = Math.max(when, audioContext.currentTime + 0.015);
-  const oscillator = audioContext.createOscillator();
-  const gain = audioContext.createGain();
-  oscillator.type = type;
-  oscillator.frequency.setValueAtTime(frequency, when);
-  if (endFrequency) oscillator.frequency.exponentialRampToValueAtTime(endFrequency, when + duration);
-  gain.gain.setValueAtTime(0.0001, when);
-  if (group === "effect") {
-    gain.gain.linearRampToValueAtTime(volume, when + 0.008);
-    gain.gain.linearRampToValueAtTime(0, when + duration);
-  } else {
-    gain.gain.exponentialRampToValueAtTime(volume, when + 0.008);
-    gain.gain.exponentialRampToValueAtTime(0.0001, when + duration);
-  }
-  oscillator.connect(gain);
-  gain.connect(audioContext.destination);
-  voices.set(oscillator, group);
-  oscillator.onended = () => { voices.delete(oscillator); oscillator.disconnect(); gain.disconnect(); };
-  oscillator.start(when);
-  oscillator.stop(when + duration + 0.01);
-}
-function stopVoices(group) {
-  for (const [voice, kind] of voices) {
-    if (kind !== group) continue;
-    try { voice.stop(); } catch (_) {}
-    voices.delete(voice);
-  }
-}
-function effect(kind) {
-  if (!soundsEnabled || !audioContext || audioContext.state !== "running") return;
-  const now = audioContext.currentTime;
-  if (kind === "shoot") tone(1100, 0.16, "square", 0.13, now, 240);
-  else if (kind === "hit") tone(720, 0.18, "triangle", 0.22, now, 190);
-  else if (kind === "shield") tone(330, 0.22, "square", 0.13, now, 100);
-  else tone(280, 0.32, "sawtooth", 0.18, now, 70);
-}
-function playExplosion() { effect(explosionSound); }
-function stopMusic() {
-  if (musicTimer !== null) clearInterval(musicTimer);
-  musicTimer = null;
-  stopVoices("music");
-}
-function scheduleMusic() {
-  if (!musicEnabled || state !== "playing" || !audioContext || audioContext.state !== "running") return;
-  const melody = melodies[Number(document.getElementById("musicSelect").value) - 1];
-  if (nextNoteTime < audioContext.currentTime) nextNoteTime = audioContext.currentTime;
-  while (nextNoteTime < audioContext.currentTime + 0.15) {
-    const note = melody[musicStep % melody.length];
-    tone(440 * Math.pow(2, (note - 69) / 12), 0.17, "triangle", 0.045, nextNoteTime, null, "music");
-    if (musicStep % 2 === 0) tone(440 * Math.pow(2, (melody[0] - 24 - 69) / 12), 0.28, "sine", 0.07, nextNoteTime, null, "music");
-    musicStep++;
-    nextNoteTime += 0.22;
-  }
-}
-function syncMusic() {
-  if (!musicEnabled || state !== "playing" || !audioContext || audioContext.state !== "running") stopMusic();
-  else if (musicTimer === null) {
-    nextNoteTime = audioContext.currentTime;
-    scheduleMusic();
-    musicTimer = setInterval(scheduleMusic, 75);
-  }
-  musicButton.textContent = musicEnabled ? "Musik: på" : "Musik: av";
-  musicButton.setAttribute("aria-pressed", String(musicEnabled));
-}
-async function resumeGameAudio(testSound = false) {
-  if ((soundsEnabled || musicEnabled) && await unlockAudio()) {
-    syncMusic();
-    if (testSound && soundsEnabled) effect(shootSound);
-  }
-}
-async function changeMusic() {
-  stopMusic(); musicStep = 0;
-  if (musicEnabled) await unlockAudio();
-  syncMusic();
-}
-soundButton.addEventListener("click", async () => {
-  soundButton.disabled = true;
-  if (soundsEnabled) { soundsEnabled = false; stopVoices("effect"); }
-  else {
-    soundsEnabled = await unlockAudio();
-    if (soundsEnabled) effect(shootSound);
-  }
-  soundButton.textContent = soundsEnabled ? "Ljudeffekter: på" : "Ljudeffekter: av";
-  soundButton.setAttribute("aria-pressed", String(soundsEnabled));
-  soundButton.disabled = false;
-  soundButton.blur();
-});
-musicButton.addEventListener("click", async () => {
-  musicButton.disabled = true;
-  musicEnabled = musicEnabled ? false : await unlockAudio();
-  syncMusic();
-  musicButton.disabled = false;
-  musicButton.blur();
-});
-document.getElementById("musicSelect").addEventListener("change", changeMusic);
-
-function createEnemies() {
-  enemies = [];
-  for (let i = 0; i < 5; i++) {
-    for (let j = 0; j < 10; j++) {
-      enemies.push({ x: 60 + j * 60, y: 40 + i * 40, w: 30, h: 20, alive: true });
-    }
-  }
-}
-
-function createShields() {
-  shields = [];
-  for (let i = 0; i < 3; i++) {
-    shields.push({ x: 150 + i * 200, y: 450, w: 60, h: 20, hp: 5 });
-  }
-}
-
-createEnemies();
-createShields();
-
-const gameKeys = new Set(["ArrowLeft", "ArrowRight", "KeyA", "KeyD", "Space", "KeyP", "Escape"]);
-document.addEventListener("keydown", e => {
-  if (/^(SELECT|INPUT|TEXTAREA)$/.test(e.target.tagName) || (e.target.tagName === "BUTTON" && e.code === "Space")) return;
-  if (!gameKeys.has(e.code)) return;
-  e.preventDefault();
-  if (e.code === "KeyP" || e.code === "Escape") {
-    if (!e.repeat && (state === "playing" || state === "paused")) { resumeGameAudio(); setState(state === "playing" ? "paused" : "playing"); }
-  } else if (state === "playing") keys[e.code] = true;
-});
-document.addEventListener("keyup", e => { delete keys[e.code]; });
-for (const [id, action] of [["leftButton", "left"], ["rightButton", "right"], ["fireButton", "fire"]]) {
-  const button = document.getElementById(id);
-  button.addEventListener("pointerdown", e => {
-    if (e.pointerType === "mouse" && e.button !== 0) return;
-    e.preventDefault();
-    if (state !== "playing") return;
-    if ((soundsEnabled || musicEnabled) && (!audioContext || audioContext.state !== "running")) resumeGameAudio();
-    button.setPointerCapture(e.pointerId);
-    pointers.set(e.pointerId, action);
-    button.classList.add("active");
-  });
-  const release = e => {
-    pointers.delete(e.pointerId);
-    if (![...pointers.values()].includes(action)) button.classList.remove("active");
-  };
-  button.addEventListener("pointerup", release);
-  button.addEventListener("pointercancel", release);
-  button.addEventListener("lostpointercapture", release);
-  button.addEventListener("contextmenu", e => e.preventDefault());
-}
-function held(action) { return [...pointers.values()].includes(action); }
-playButton.addEventListener("click", () => {
-  const audioReady = resumeGameAudio(state !== "paused");
-  state === "paused" ? setState("playing") : restart();
-  playButton.blur();
-  return audioReady;
-});
-pauseButton.addEventListener("click", () => setState("paused"));
-document.getElementById("restartButton").addEventListener("click", e => { resumeGameAudio(true); restart(); e.currentTarget.blur(); });
-window.addEventListener("blur", () => { if (state === "playing") setState("paused"); else clearInput(); });
-document.addEventListener("visibilitychange", () => { if (document.hidden && state === "playing") setState("paused"); });
-function checkPowerLevel() {
-  while (score >= nextPowerScore) {
-    player.powerLevel = Math.min(2, player.powerLevel + 1);
-    nextPowerScore += 1000;
-  }
-}
-
-function fire() {
-  let fireRate = player.powerLevel === 2 ? 0.15 : 0.3;
-  if (cooldown <= 0) {
-    if (player.powerLevel >= 1) {
-      player.bullets.push({ x: player.x + 10, y: player.y });
-      player.bullets.push({ x: player.x + player.w - 14, y: player.y });
-    } else {
-      player.bullets.push({ x: player.x + player.w / 2 - 2, y: player.y });
-    }
-    cooldown = fireRate;
-    effect(shootSound);
-  }
-}
-
-function enemyFire() {
-  if (Math.random() < 0.02) {
-    let shooters = enemies.filter(e => e.alive);
-    if (shooters.length > 0) {
-      let e = shooters[Math.floor(Math.random() * shooters.length)];
-      enemyBullets.push({ x: e.x + e.w / 2, y: e.y + e.h });
-    }
-  }
-}
-
-function moveEnemies() {
-  let hitEdge = false;
-  enemies.forEach(e => {
-    if (e.alive) {
-      e.x += enemyDirection * enemySpeed;
-      if (e.x < 0 || e.x + e.w > canvas.width) hitEdge = true;
-    }
-  });
-  if (hitEdge) {
-    enemyDirection *= -1;
-    enemies.forEach(e => e.y += 10);
-  }
-}
-
-function checkCollisions() {
-  player.bullets.forEach(b => {
-    enemies.forEach(e => {
-      if (!b.dead && e.alive && b.x < e.x + e.w && b.x + 4 > e.x && b.y < e.y + e.h && b.y + 10 > e.y) {
-        e.alive = false;
-        b.dead = true;
-        score += 100 * wave;
-        effect(hitSound);
-        playExplosion();
-      }
-    });
-  });
-
-  if (enemies.every(e => !e.alive)) {
-    enemySpeed += 0.5;
-    wave++;
-    createEnemies();
-    createShields();
-    player.bullets = []; enemyBullets = [];
-    enemyDirection = 1;
-  }
-
-  enemyBullets.forEach(b => {
-    if (!b.dead && b.x < player.x + player.w && b.x + 4 > player.x && b.y < player.y + player.h && b.y + 10 > player.y) {
-      b.dead = true;
-      if (invulnerable > 0) return;
-      invulnerable = 1;
-      player.lives--;
-      effect(shieldHitSound);
-      playExplosion();
-      if (player.powerLevel > 0) player.powerLevel--;
-      if (player.lives <= 0) {
-        setState("over");
-      }
-    }
-  });
-
-  shields.forEach(shield => {
-    player.bullets.forEach(b => {
-      if (!b.dead && shield.hp > 0 && b.x < shield.x + shield.w && b.x + 4 > shield.x && b.y < shield.y + shield.h && b.y + 10 > shield.y) {
-        b.dead = true;
-      }
-    });
-    enemyBullets.forEach(b => {
-      if (!b.dead && shield.hp > 0 && b.x < shield.x + shield.w && b.x + 4 > shield.x && b.y < shield.y + shield.h && b.y + 10 > shield.y) {
-        b.dead = true;
-        shield.hp--;
-        effect(shieldHitSound);
-        playExplosion();
-      }
-    });
-  });
-
-  shields = shields.filter(s => s.hp > 0);
-  player.bullets = player.bullets.filter(b => !b.dead);
-  enemyBullets = enemyBullets.filter(b => !b.dead);
-}
-
-function update() {
-  cooldown = Math.max(0, cooldown - STEP);
-  invulnerable = Math.max(0, invulnerable - STEP);
-  if (keys["ArrowLeft"] || keys["KeyA"] || held("left")) player.x -= player.speed;
-  if (keys["ArrowRight"] || keys["KeyD"] || held("right")) player.x += player.speed;
-  player.x = Math.max(0, Math.min(canvas.width - player.w, player.x));
-
-  if (keys["Space"] || held("fire")) fire();
-
-  player.bullets.forEach(b => b.y -= 7);
-  player.bullets = player.bullets.filter(b => b.y > 0);
-
-  enemyBullets.forEach(b => b.y += 4);
-  enemyBullets = enemyBullets.filter(b => b.y < canvas.height);
-
-  moveEnemies();
-  checkCollisions();
-  if (enemies.some(e => e.alive && e.y + e.h >= player.y)) setState("over");
-  if (state !== "playing") return;
-  enemyFire();
-  checkPowerLevel();
-}
-
-function draw() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  ctx.fillStyle = invulnerable > 0 && Math.floor(invulnerable * 12) % 2 ? "#456" : "lime";
-  ctx.fillRect(player.x, player.y, player.w, player.h);
-
-  ctx.fillStyle = "white";
-  player.bullets.forEach(b => ctx.fillRect(b.x, b.y, 4, 10));
-
-  let shape = enemyShapes[(wave - 1) % enemyShapes.length];
-  let color = enemyColors[(wave - 1) % enemyColors.length];
-  ctx.fillStyle = color;
-
-  enemies.forEach(e => {
-    if (e.alive) {
-      ctx.beginPath();
-      if (shape === "triangle") {
-        ctx.moveTo(e.x + e.w / 2, e.y);
-        ctx.lineTo(e.x, e.y + e.h);
-        ctx.lineTo(e.x + e.w, e.y + e.h);
-        ctx.closePath();
-      } else if (shape === "rect") {
-        ctx.rect(e.x, e.y, e.w, e.h);
-      } else if (shape === "circle") {
-        ctx.ellipse(e.x + e.w / 2, e.y + e.h / 2, e.w / 2, e.h / 2, 0, 0, Math.PI * 2);
-      }
-      ctx.fill();
-    }
-  });
-
-  ctx.fillStyle = "orange";
-  enemyBullets.forEach(b => ctx.fillRect(b.x, b.y, 4, 10));
-
-  ctx.fillStyle = "green";
-  shields.forEach(s => ctx.fillRect(s.x, s.y, s.w, s.h));
-
-  ctx.fillStyle = "white";
-  ctx.font = "20px Arial";
-  ctx.fillText("Score: " + score, 10, 20);
-  ctx.fillText("Lives: " + player.lives, 700, 20);
-  ctx.fillText("Wave: " + wave, 350, 20);
-  ctx.fillText("Power: " + player.powerLevel, 350, 50);
-}
-
-function gameLoop(timestamp) {
-  if (lastTime === null) lastTime = timestamp;
-  if (state === "playing") {
-    accumulator += Math.min((timestamp - lastTime) / 1000, 0.1);
-    while (accumulator + 1e-9 >= STEP && state === "playing") {
-      accumulator -= STEP;
-      update();
-    }
-  }
-  lastTime = timestamp;
-  draw();
-  requestAnimationFrame(gameLoop);
-}
-draw();
-requestAnimationFrame(gameLoop);
-</script>
-
 </body>
 </html>
+
