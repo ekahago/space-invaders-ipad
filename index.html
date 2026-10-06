@@ -14,6 +14,7 @@
     .overlay { position: absolute; inset: 0; background: #070d19da; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; border-radius: 8px; }
     .overlay[hidden] { display: none; }
     .controls, .toolbar { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+    .toolbar { margin-top: 64px; padding-top: 20px; border-top: 1px solid #40516b; }
     button, select { font: inherit; border: 1px solid #687b96; border-radius: 8px; padding: 10px 16px; min-height: 44px; background: #22324c; color: white; }
     button { cursor: pointer; }
     button:focus-visible, select:focus-visible { outline: 3px solid #77dcff; }
@@ -28,7 +29,7 @@
       .controls { position: fixed; inset: 35% 8px auto; justify-content: space-between; pointer-events: none; }
       .controls button { pointer-events: auto; min-width: 52px; padding: 8px; }
       #fireButton { min-width: 72px; }
-      .toolbar { margin-top: 4px; gap: 4px; } button, select { padding: 6px; }
+      .toolbar { margin-top: 64px; gap: 8px; } button, select { padding: 6px; }
     }
   </style>
 </head>
@@ -113,64 +114,129 @@ function restart() {
 const enemyShapes = ["triangle", "rect", "circle"];
 const enemyColors = ["red", "yellow", "cyan"];
 
-const shootSound = new Audio("https://www.soundjay.com/button/sounds/button-16.mp3");
-const hitSound = new Audio("https://www.soundjay.com/button/sounds/button-10.mp3");
-const shieldHitSound = new Audio("https://www.soundjay.com/button/sounds/button-19.mp3");
-const explosionSound = new Audio("https://www.soundjay.com/explosion/explosion-01.mp3");
-
-const musicTracks = [
-  new Audio("https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"),
-  new Audio("https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3"),
-  new Audio("https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3"),
-  new Audio("https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3")
-];
-
-let music = musicTracks[0];
-let musicEnabled = false;
+// Generate audio locally: no external MP3 downloads or per-element iOS unlocks.
+const shootSound = "shoot", hitSound = "hit", shieldHitSound = "shield", explosionSound = "explosion";
+let audioContext;
 let soundsEnabled = false;
+let musicEnabled = false;
+let musicTimer = null;
+let musicStep = 0;
+let nextNoteTime = 0;
+const voices = new Map();
 const soundButton = document.getElementById("soundButton");
 const musicButton = document.getElementById("musicButton");
 const audioStatus = document.getElementById("audioStatus");
-musicTracks.forEach(track => { track.loop = true; track.volume = 0.1; track.preload = "none"; });
-const effects = [shootSound, hitSound, shieldHitSound, explosionSound];
-effects.forEach(effect => { effect.volume = 0.6; effect.preload = "none"; });
-function safePlay(audio) {
-  const result = audio.play();
-  if (result) result.catch(() => {
-    audioStatus.textContent = "Ljudet kunde inte spelas. Kontrollera anslutningen och tryck på ljudknappen igen.";
-  });
+const melodies = [
+  [60, 67, 72, 67, 63, 70, 75, 70],
+  [57, 60, 64, 69, 67, 64, 60, 64],
+  [62, 65, 69, 74, 72, 69, 65, 69],
+  [60, 64, 67, 71, 72, 71, 67, 64]
+];
+async function unlockAudio() {
+  try {
+    if (!audioContext) {
+      const Context = window.AudioContext || window.webkitAudioContext;
+      if (!Context) throw new Error("Web Audio unavailable");
+      // On supported iPads, use media playback rather than the ambient session.
+      try { if (navigator.audioSession) navigator.audioSession.type = "playback"; } catch (_) {}
+      audioContext = new Context();
+    }
+    if (audioContext.state !== "running") await audioContext.resume();
+    if (audioContext.state !== "running") throw new Error("Audio suspended");
+    audioStatus.textContent = "";
+    return true;
+  } catch (_) {
+    audioStatus.textContent = "Ljudet kunde inte starta. Tryck på ljudknappen för att försöka igen.";
+    return false;
+  }
 }
-function effect(audio) {
-  if (!soundsEnabled) return;
-  audio.currentTime = 0;
-  safePlay(audio);
+function tone(frequency, duration, type, volume, when, endFrequency, group = "effect") {
+  if (!audioContext || audioContext.state !== "running") return;
+  const oscillator = audioContext.createOscillator();
+  const gain = audioContext.createGain();
+  oscillator.type = type;
+  oscillator.frequency.setValueAtTime(frequency, when);
+  if (endFrequency) oscillator.frequency.exponentialRampToValueAtTime(endFrequency, when + duration);
+  gain.gain.setValueAtTime(0.0001, when);
+  gain.gain.exponentialRampToValueAtTime(volume, when + 0.008);
+  gain.gain.exponentialRampToValueAtTime(0.0001, when + duration);
+  oscillator.connect(gain);
+  gain.connect(audioContext.destination);
+  voices.set(oscillator, group);
+  oscillator.onended = () => { voices.delete(oscillator); oscillator.disconnect(); gain.disconnect(); };
+  oscillator.start(when);
+  oscillator.stop(when + duration + 0.01);
+}
+function stopVoices(group) {
+  for (const [voice, kind] of voices) {
+    if (kind !== group) continue;
+    try { voice.stop(); } catch (_) {}
+    voices.delete(voice);
+  }
+}
+function effect(kind) {
+  if (!soundsEnabled || !audioContext || audioContext.state !== "running") return;
+  const now = audioContext.currentTime;
+  if (kind === "shoot") tone(900, 0.12, "square", 0.055, now, 180);
+  else if (kind === "hit") tone(540, 0.10, "triangle", 0.12, now, 110);
+  else if (kind === "shield") tone(170, 0.18, "square", 0.07, now, 45);
+  else tone(95, 0.28, "sawtooth", 0.10, now, 25);
 }
 function playExplosion() { effect(explosionSound); }
+function stopMusic() {
+  if (musicTimer !== null) clearInterval(musicTimer);
+  musicTimer = null;
+  stopVoices("music");
+}
+function scheduleMusic() {
+  if (!musicEnabled || state !== "playing" || !audioContext || audioContext.state !== "running") return;
+  const melody = melodies[Number(document.getElementById("musicSelect").value) - 1];
+  if (nextNoteTime < audioContext.currentTime) nextNoteTime = audioContext.currentTime;
+  while (nextNoteTime < audioContext.currentTime + 0.15) {
+    const note = melody[musicStep % melody.length];
+    tone(440 * Math.pow(2, (note - 69) / 12), 0.17, "triangle", 0.045, nextNoteTime, null, "music");
+    if (musicStep % 2 === 0) tone(440 * Math.pow(2, (melody[0] - 24 - 69) / 12), 0.28, "sine", 0.07, nextNoteTime, null, "music");
+    musicStep++;
+    nextNoteTime += 0.22;
+  }
+}
 function syncMusic() {
-  musicTracks.forEach(track => { if (track !== music || !musicEnabled || state !== "playing") track.pause(); });
-  if (musicEnabled && state === "playing") safePlay(music);
+  if (!musicEnabled || state !== "playing" || !audioContext || audioContext.state !== "running") stopMusic();
+  else if (musicTimer === null) {
+    nextNoteTime = audioContext.currentTime;
+    scheduleMusic();
+    musicTimer = setInterval(scheduleMusic, 75);
+  }
   musicButton.textContent = musicEnabled ? "Musik: på" : "Musik: av";
   musicButton.setAttribute("aria-pressed", String(musicEnabled));
 }
-function changeMusic() {
-  music.pause();
-  music = musicTracks[Number(document.getElementById("musicSelect").value) - 1];
+async function resumeGameAudio() {
+  if ((soundsEnabled || musicEnabled) && await unlockAudio()) syncMusic();
+}
+async function changeMusic() {
+  stopMusic(); musicStep = 0;
+  if (musicEnabled) await unlockAudio();
   syncMusic();
 }
-soundButton.addEventListener("click", () => {
-  soundsEnabled = !soundsEnabled;
-  audioStatus.textContent = "";
+soundButton.addEventListener("click", async () => {
+  soundButton.disabled = true;
+  if (soundsEnabled) { soundsEnabled = false; stopVoices("effect"); }
+  else {
+    soundsEnabled = await unlockAudio();
+    if (soundsEnabled) effect(shootSound);
+  }
   soundButton.textContent = soundsEnabled ? "Ljudeffekter: på" : "Ljudeffekter: av";
   soundButton.setAttribute("aria-pressed", String(soundsEnabled));
-  // Unlock each HTML audio element during the user's gesture on iOS.
-  if (soundsEnabled) effects.forEach(audio => {
-    audio.muted = true;
-    const result = audio.play();
-    if (result) result.then(() => { audio.pause(); audio.currentTime = 0; audio.muted = false; })
-      .catch(() => { audio.muted = false; audioStatus.textContent = "Vissa ljudeffekter kunde inte laddas."; });
-  });
+  soundButton.disabled = false;
+  soundButton.blur();
 });
-musicButton.addEventListener("click", () => { musicEnabled = !musicEnabled; audioStatus.textContent = ""; syncMusic(); });
+musicButton.addEventListener("click", async () => {
+  musicButton.disabled = true;
+  musicEnabled = musicEnabled ? false : await unlockAudio();
+  syncMusic();
+  musicButton.disabled = false;
+  musicButton.blur();
+});
 document.getElementById("musicSelect").addEventListener("change", changeMusic);
 
 function createEnemies() {
@@ -198,7 +264,7 @@ document.addEventListener("keydown", e => {
   if (!gameKeys.has(e.code)) return;
   e.preventDefault();
   if (e.code === "KeyP" || e.code === "Escape") {
-    if (!e.repeat && (state === "playing" || state === "paused")) setState(state === "playing" ? "paused" : "playing");
+    if (!e.repeat && (state === "playing" || state === "paused")) { resumeGameAudio(); setState(state === "playing" ? "paused" : "playing"); }
   } else if (state === "playing") keys[e.code] = true;
 });
 document.addEventListener("keyup", e => { delete keys[e.code]; });
@@ -222,9 +288,9 @@ for (const [id, action] of [["leftButton", "left"], ["rightButton", "right"], ["
   button.addEventListener("contextmenu", e => e.preventDefault());
 }
 function held(action) { return [...pointers.values()].includes(action); }
-playButton.addEventListener("click", () => { state === "paused" ? setState("playing") : restart(); playButton.blur(); });
+playButton.addEventListener("click", () => { resumeGameAudio(); state === "paused" ? setState("playing") : restart(); playButton.blur(); });
 pauseButton.addEventListener("click", () => setState("paused"));
-document.getElementById("restartButton").addEventListener("click", e => { restart(); e.currentTarget.blur(); });
+document.getElementById("restartButton").addEventListener("click", e => { resumeGameAudio(); restart(); e.currentTarget.blur(); });
 window.addEventListener("blur", () => { if (state === "playing") setState("paused"); else clearInput(); });
 document.addEventListener("visibilitychange", () => { if (document.hidden && state === "playing") setState("paused"); });
 function checkPowerLevel() {
