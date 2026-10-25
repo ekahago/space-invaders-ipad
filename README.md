@@ -4,7 +4,9 @@ Ett spel för iPad och dator, byggt med HTML, CSS, JavaScript och Canvas. Inga p
 
 Spela: https://ekahago.github.io/space-invaders-ipad/
 
-Spela testversion 3.1: https://ekahago.github.io/space-invaders-ipad/playtest/
+Spela testversion 3.1 · test 1 (mönster och hastighet): https://ekahago.github.io/space-invaders-ipad/playtest/
+
+Spela testversion 3.1 · test 2 (vapenförråd, robotar och bomber): https://ekahago.github.io/space-invaders-ipad/playtest2/
 
 ## Styrning
 
