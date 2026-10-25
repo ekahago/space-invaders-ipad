@@ -89,7 +89,18 @@ function updateHUD() {
   document.getElementById("waveValue").textContent = String(wave).padStart(2,"0");
   document.getElementById("livesValue").textContent = "♥ ".repeat(Math.max(0,player.lives)).trim() || "—";
   document.getElementById("powerValue").textContent = weaponNames[selectedWeapon] + (selectedWeapon === "cannon" ? " " + ["I","II","III"][player.powerLevel] : selectedWeapon === "triple" ? " ∞" : " ×" + arsenal[selectedWeapon]);
-  document.getElementById("arsenalValue").textContent = "KANON ∞ · " + (arsenal.triple ? "TRIPPEL ∞" : "TRIPPEL —") + " · LASER " + arsenal.laser + " · ROBOT " + arsenal.missile + " · BOMB " + arsenal.bomb;
+  document.querySelectorAll(".weapon-slot").forEach(button => {
+    const type = button.dataset.weapon;
+    const available = unlocked(type);
+    const active = selectedWeapon === type;
+    const ammo = !available ? "LÅST" : (type === "cannon" || type === "triple" ? "∞" : String(arsenal[type]));
+    button.disabled = !available;
+    button.classList.toggle("is-active", active);
+    button.setAttribute("aria-pressed", String(active));
+    const amount = button.querySelector(".weapon-slot-ammo");
+    if (amount && amount.textContent !== ammo) amount.textContent = ammo;
+    button.setAttribute("aria-label", weaponNames[type] + ", " + (available ? (active ? "valt, " : "") + (ammo === "∞" ? "obegränsad ammunition" : ammo + " skott") : "låst"));
+  });
   const sector = Math.floor((wave-1)/5);
   const missionName = {
     classic: "FORMATION", weave: "SICKSACK", split: "TVÅ FLOTTOR",

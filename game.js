@@ -186,7 +186,7 @@ function hitPlayer() {
   }
   invulnerable = 1.2; player.lives--; waveDamage++;
   burst(player.x + 25, player.y, "#77e8ff", 24);
-  effect(shieldHitSound); playExplosion();
+  effect(lifeLostSound);
   if (player.powerLevel > 0) player.powerLevel--;
   if (player.lives <= 0) setState("over");
 }
@@ -293,6 +293,12 @@ pauseButton.addEventListener("click", () => setState("paused"));
 document.getElementById("weaponButton").addEventListener("click", e => {
   if (state === "playing") cycleWeapon();
   e.currentTarget.blur();
+});
+document.querySelectorAll(".weapon-slot").forEach(button => {
+  button.addEventListener("click", e => {
+    if (state === "playing") chooseWeapon(button.dataset.weapon);
+    e.currentTarget.blur();
+  });
 });
 document.getElementById("restartButton").addEventListener("click", e => { resumeGameAudio(true); restart(); e.currentTarget.blur(); });
 window.addEventListener("blur", () => { if (state === "playing") setState("paused"); else clearInput(); });

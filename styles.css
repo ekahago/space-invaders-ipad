@@ -95,3 +95,38 @@ footer { gap:12px; flex-wrap:wrap; line-height:1.8; }
   .board { max-width:1200px; min-width:0; width:min(100%, calc((100svh - 220px) * 4 / 3)); }
   .controls { max-width:1200px; width:min(100%, calc((100svh - 220px) * 4 / 3)); }
 }
+
+/* 3.2.1: clear, selectable inventory on desktop and iPad. */
+.arsenal-status { display:block; padding:10px 12px 12px; border-radius:10px; }
+.arsenal-heading { display:flex; align-items:baseline; justify-content:space-between; flex-wrap:wrap; gap:4px 12px; margin-bottom:9px; }
+.arsenal-heading strong { color:#a4e8ff; font-size:11px; letter-spacing:1px; }
+.arsenal-heading span { font-size:10px; color:#a9bfdb; letter-spacing:0; }
+.weapon-slots { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:8px; }
+.weapon-slot { position:relative; display:flex; flex-direction:column; gap:2px; align-items:center; justify-content:center; min-width:0; min-height:59px; padding:7px 4px; border:1px solid #3b536b; border-radius:8px; background:#15293b; color:#e0effc; touch-action:manipulation; }
+.weapon-slot:hover:not(:disabled) { background:#23405a; }
+.weapon-slot:disabled { opacity:.55; cursor:default; background:#0d1a2a; }
+.weapon-slot.is-active { background:#183e44; color:#b3ffe3; border:2px solid #8ef5cf; box-shadow:0 0 0 1px #64ddb433, inset 0 0 16px #36d3a014; }
+.weapon-shortcut { position:absolute; top:4px; left:7px; font:700 9px ui-monospace,monospace; color:#86adc4; }
+.weapon-slot-name { font:800 clamp(10px,1.45vw,13px) ui-monospace,monospace; letter-spacing:.5px; }
+.weapon-slot-ammo { color:#ffe0a6; font:800 14px ui-monospace,monospace; }
+.weapon-slot:disabled .weapon-slot-ammo { color:#8da0b8; font-size:10px; }
+.weapon-slot.is-active .weapon-slot-ammo { color:#a1f5de; }
+@media(max-width:520px) {
+ .weapon-slots { gap:4px; }
+ .arsenal-status { padding:8px 6px; }
+ .arsenal-heading span { font-size:8px; }
+ .weapon-slot { min-height:53px; padding:8px 1px 5px; }
+ .weapon-shortcut { font-size:8px; left:4px; }
+ .weapon-slot-name { font-size:9px; letter-spacing:0; }
+ .weapon-slot-ammo { font-size:12px; }
+ .weapon-slot:disabled .weapon-slot-ammo { font-size:9px; }
+}
+@media(max-height:540px) and (orientation:landscape) {
+ .arsenal-status { padding:5px; }
+ .arsenal-heading { margin-bottom:4px; }
+ .weapon-slots { gap:4px; }
+ .weapon-slot { min-height:40px; padding:4px; }
+ .weapon-shortcut { display:none; }
+ .weapon-slot-name { font-size:9px; }
+ .weapon-slot-ammo { font-size:11px; }
+}

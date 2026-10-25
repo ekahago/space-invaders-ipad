@@ -2,7 +2,13 @@ const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/st
 const path=require('node:path');process.chdir(path.resolve(__dirname,'..'));
 const nodes=new Map();
 function node(id){if(!nodes.has(id))nodes.set(id,{value:'1',width:800,height:600,handlers:{},classList:{add(){},remove(){}},addEventListener(k,f){this.handlers[k]=f;},setAttribute(){},setPointerCapture(){},blur(){},getContext(){return new Proxy({},{get:(o,k)=>k==='createLinearGradient'||k==='createRadialGradient'?()=>({addColorStop(){}}):()=>{}});}});return nodes.get(id);}
-const document={getElementById:node,querySelectorAll:()=>[],addEventListener(){}};
+const weaponSlots=['cannon','triple','laser','missile','bomb'].map(weapon=>({
+ dataset:{weapon}, handlers:{}, attributes:{}, ammo:{textContent:''}, disabled:false,
+ classList:{toggle(name,active){this[name]=active;},add(name){this[name]=true;},remove(name){this[name]=false;}},
+ addEventListener(name,fn){this.handlers[name]=fn;},setAttribute(name,value){this.attributes[name]=value;},
+ querySelector(){return this.ammo;},blur(){}
+}));
+const document={getElementById:node,querySelectorAll:(selector)=>selector==='.weapon-slot'?weaponSlots:[],addEventListener(){}};
 class Audio{constructor(){this.paused=true;}play(){this.paused=false;return Promise.resolve();}pause(){this.paused=true;}}
 const audioParam={setValueAtTime(){},exponentialRampToValueAtTime(){},linearRampToValueAtTime(){}};
 class AudioContext { constructor(){this.state='suspended';this.currentTime=0;this.destination={};} resume(){this.state='running';return Promise.resolve();} createOscillator(){return {frequency:audioParam,connect(){},disconnect(){},start(){},stop(){}};} createGain(){return {gain:audioParam,connect(){},disconnect(){}};} }
@@ -44,7 +50,16 @@ down('leftButton',1);down('fireButton',2);assert.ok(held('left')&&held('fire'));
 document.getElementById('leftButton').handlers.pointercancel({pointerId:1});assert.ok(!held('left')&&held('fire'));
 setState('paused');assert.equal(pointers.size,0);
 restart();drawScene(2000);assert.equal(document.getElementById('waveValue').textContent,'01');
-console.log('PASS: v3.2 waves, speed cap, enemies/bosses, inventory, lasers, missiles, bombs, bubble, survival, controls and frame-rate.');
+assert.equal(document.querySelectorAll('.weapon-slot')[0].attributes['aria-pressed'],'true');
+assert.equal(document.querySelectorAll('.weapon-slot')[2].disabled,true);
+collectPickup({type:'laser'});drawScene(2001);
+assert.equal(document.querySelectorAll('.weapon-slot')[2].attributes['aria-pressed'],'true');
+assert.equal(document.querySelectorAll('.weapon-slot')[2].ammo.textContent,'15');
+assert.equal(document.querySelectorAll('.weapon-slot')[2].disabled,false);
+document.querySelectorAll('.weapon-slot')[0].handlers.click({currentTarget:document.querySelectorAll('.weapon-slot')[0]});
+assert.equal(selectedWeapon,'cannon');
+drawScene(2002);assert.equal(document.querySelectorAll('.weapon-slot')[0].attributes['aria-pressed'],'true');
+console.log('PASS: v3.2.1 waves, visible inventory buttons, speed cap, enemies/bosses, weapons, bubble, survival, controls and frame-rate.');
 `,context);
 
 vm.runInContext(`(async()=>{
@@ -53,6 +68,13 @@ stopVoices('effect');cooldown=0;fire();assert.equal(voices.size,1);stopVoices('e
 let linear=[];let scheduled=[];audioContext.createGain=()=>({gain:{setValueAtTime(){},exponentialRampToValueAtTime(){},linearRampToValueAtTime(value,time){linear.push([value,time]);}},connect(){},disconnect(){}});
 audioContext.createOscillator=()=>({frequency:audioParam,connect(){},disconnect(){},start(time){scheduled.push(time);},stop(){}});
 effect(shootSound);assert.equal(linear[0][0],0.13);assert.equal(linear[1][0],0);assert.ok(scheduled[0]>=audioContext.currentTime+0.015);
+stopVoices('effect');soundsEnabled=true;
+let lifeTones=[];
+audioContext.createOscillator=()=>({frequency:{setValueAtTime(value){lifeTones.push(value);},exponentialRampToValueAtTime(){},linearRampToValueAtTime(){}},connect(){},disconnect(){},start(){},stop(){}});
+restart();hitPlayer();assert.equal(player.lives,2);assert.deepEqual(lifeTones,[620,360,170]);
+lifeTones=[];hitPlayer();assert.deepEqual(lifeTones,[]);
+invulnerable=0;hitPlayer();assert.equal(player.lives,1);assert.deepEqual(lifeTones,[620,360,170]);
+lifeTones=[];restart();collectPickup({type:'bubble'});lifeTones=[];hitPlayer();assert.equal(player.lives,3);assert.deepEqual(lifeTones,[330]);
 stopVoices('effect');soundsEnabled=false;
 await soundButton.handlers.click();assert.equal(soundsEnabled,true);assert.equal(audioContext.state,'running');assert.equal(voices.size,1);
 await soundButton.handlers.click();assert.equal(soundsEnabled,false);assert.equal(voices.size,0);
@@ -63,6 +85,6 @@ setState('playing');assert.notEqual(musicTimer,null);
 await musicButton.handlers.click();assert.equal(musicEnabled,false);assert.equal(musicTimer,null);assert.equal(voices.size,0);
 audioContext.state='suspended';await soundButton.handlers.click();assert.equal(audioContext.state,'running');
 assert.equal(navigator.audioSession.type,'playback');
-console.log('PASS: audio activation, local tones, stop, music switch, pause/resume, interrupted context recovery.');
+console.log('PASS: loss-of-ship warning, shield tone, audio activation, local tones, stop, music switch, pause/resume, interrupted context recovery.');
 })()`,context).catch(e=>{console.error(e);process.exitCode=1;});
 

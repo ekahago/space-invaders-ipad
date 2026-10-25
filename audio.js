@@ -1,5 +1,5 @@
 // Generate audio locally: no external MP3 downloads or per-element iOS unlocks.
-const shootSound = "shoot", hitSound = "hit", shieldHitSound = "shield", explosionSound = "explosion";
+const shootSound = "shoot", hitSound = "hit", shieldHitSound = "shield", explosionSound = "explosion", lifeLostSound = "lifeLost";
 let audioContext;
 let soundsEnabled = true;
 let musicEnabled = false;
@@ -71,7 +71,12 @@ function effect(kind) {
   if (kind === "shoot") tone(1100, 0.16, "square", 0.13, now, 240);
   else if (kind === "hit") tone(720, 0.18, "triangle", 0.22, now, 190);
   else if (kind === "shield") tone(330, 0.22, "square", 0.13, now, 100);
-  else tone(280, 0.32, "sawtooth", 0.18, now, 70);
+  else if (kind === "lifeLost") {
+    // Descending warning plays for lost ships, not when a shield absorbs a hit.
+    tone(620, 0.17, "square", 0.21, now, 360);
+    tone(360, 0.23, "sawtooth", 0.23, now + 0.16, 170);
+    tone(170, 0.31, "triangle", 0.23, now + 0.39, 75);
+  } else tone(280, 0.32, "sawtooth", 0.18, now, 70);
 }
 function playExplosion() { effect(explosionSound); }
 function stopMusic() {
