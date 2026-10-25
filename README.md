@@ -4,6 +4,8 @@ Ett spel för iPad och dator, byggt med HTML, CSS, JavaScript och Canvas. Inga p
 
 Spela: https://ekahago.github.io/space-invaders-ipad/
 
+Spela testversion 3.1: https://ekahago.github.io/space-invaders-ipad/playtest/
+
 ## Styrning
 
 - iPad: håll inne vänster/höger och Skjut samtidigt.
