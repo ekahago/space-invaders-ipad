@@ -72,10 +72,13 @@ function effect(kind) {
   else if (kind === "hit") tone(720, 0.18, "triangle", 0.22, now, 190);
   else if (kind === "shield") tone(330, 0.22, "square", 0.13, now, 100);
   else if (kind === "lifeLost") {
-    // Descending warning plays for lost ships, not when a shield absorbs a hit.
-    tone(620, 0.17, "square", 0.21, now, 360);
-    tone(360, 0.23, "sawtooth", 0.23, now + 0.16, 170);
-    tone(170, 0.31, "triangle", 0.23, now + 0.39, 75);
+    // A sharper impact and low descending engine crash, separate from
+    // enemy explosions and shield impacts.
+    tone(820, 0.15, "square", 0.22, now, 180);
+    tone(310, 0.43, "sawtooth", 0.27, now + 0.04, 64);
+    tone(145, 0.56, "sawtooth", 0.22, now + 0.10, 42);
+    tone(90, 0.50, "triangle", 0.28, now + 0.08, 45);
+    tone(660, 0.11, "square", 0.13, now + 0.25, 125);
   } else tone(280, 0.32, "sawtooth", 0.18, now, 70);
 }
 function playExplosion() { effect(explosionSound); }

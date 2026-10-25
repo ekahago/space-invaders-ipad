@@ -2,13 +2,18 @@
 
 Ett spel för iPad och dator, byggt med HTML, CSS, JavaScript och Canvas utan byggsteg.
 
-**Spela version 3.2.1:** https://ekahago.github.io/space-invaders-ipad/
+**Spela version 3.2.2:** https://ekahago.github.io/space-invaders-ipad/
 
 Tidigare tester (behållna):
 - Test 1, nya formationer och hastighet: https://ekahago.github.io/space-invaders-ipad/playtest/
 - Test 2, vapenförråd och nya vapen: https://ekahago.github.io/space-invaders-ipad/playtest2/
 
-## Nytt i 3.2.1
+## Nytt i 3.2.2
+
+- Överlevnadsvågen rensar nu kvarvarande fiender när tiden gått ut, med tydligt meddelande om reträtt och nedräkning inför nästa våg eller moderskeppet.
+- Starkare och mer distinkt ljud när spelarens skepp förstörs: smäll följd av fallande motorljud. Skyddsbubblans ljud är oförändrat.
+
+## Tidigare i 3.2.1
 
 - Tydliga, klickbara vapenrutor ovanför spelplanen: aktivt vapen markeras, ammunition visas och låsta vapen är nedtonade. Välj även med tryck på iPad; E/↻ och 1–5 finns kvar.
 - Separat varningsljud varje gång ett skepp förloras. Skyddsbubblan har fortsatt ett annat ljud. Ljudet följer knappen Ljudeffekter på/av.

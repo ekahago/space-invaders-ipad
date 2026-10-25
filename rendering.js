@@ -163,6 +163,14 @@ function drawScene(timestamp) {
     ctx.save();ctx.globalAlpha=Math.min(1,waveFlash);ctx.fillStyle="#07121ec0";ctx.fillRect(260,284,280,46);
     ctx.fillStyle=bossIntro>0?"#ff93a3":"#a4efff";ctx.font="bold 22px monospace";ctx.textAlign="center";ctx.fillText(bossIntro>0?"MODERSKEPP / VÅG "+wave:"VÅG "+String(wave).padStart(2,"0"),400,315);ctx.restore();
   }
+  if(intermission>0&&state==="playing"){
+    ctx.save();ctx.fillStyle="#07121ee6";ctx.fillRect(190,265,420,69);
+    ctx.textAlign="center";ctx.fillStyle="#a4efff";ctx.font="bold 22px monospace";
+    ctx.fillText((wave+1)%5===0?"MODERSKEPP ANLÄNDER":"VÅG KLAR",400,294);
+    ctx.font="14px monospace";ctx.fillStyle="#d8efff";
+    ctx.fillText("NÄSTA VÅG OM "+Math.ceil(intermission)+" SEKUNDER",400,318);
+    ctx.restore();
+  }
   if(toast.time>0&&state==="playing"){
     ctx.save();ctx.globalAlpha=Math.min(1,toast.time);ctx.fillStyle="#071523cc";ctx.fillRect(130,380,540,32);
     ctx.fillStyle=toast.color;ctx.font="bold 13px monospace";ctx.textAlign="center";ctx.fillText(toast.text,400,401);ctx.restore();

@@ -217,7 +217,16 @@ function finishWave() {
   if (state !== "playing" || intermission > 0) return;
   const bonus = (waveDamage === 0 ? 500 : 200) * wave;
   score += bonus; recordScore();
-  notify((waveDamage === 0 ? "PERFEKT VÅG" : "VÅG KLAR") + " · +" + bonus, "#77efc2");
+  if (wavePattern === "survival") {
+    // The timer, not the kill count, ends this mission. Remove survivors
+    // immediately so they cannot appear frozen while the boss approaches.
+    const remaining = enemies.filter(e => e.alive);
+    for (const e of remaining) burst(e.x + e.w / 2, e.y + e.h / 2, "#6ee6ff", 4);
+    enemies = [];
+    notify("ÖVERLEVNAD KLAR" + (remaining.length ? " · " + remaining.length + " FIENDER RETIRERAR" : "") + " · +" + bonus, "#77efc2");
+  } else {
+    notify((waveDamage === 0 ? "PERFEKT VÅG" : "VÅG KLAR") + " · +" + bonus, "#77efc2");
+  }
   intermission = 2.4; enemyBullets = []; player.bullets = [];
 }
 function moveBoss() {

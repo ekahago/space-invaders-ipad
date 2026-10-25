@@ -39,6 +39,9 @@ assert.equal(chooseWeapon('cannon'),true);cycleWeapon();assert.equal(selectedWea
 restart();assert.equal(arsenal.triple,false);assert.equal(arsenal.laser,0);assert.equal(arsenal.missile,0);assert.equal(arsenal.bomb,0);
 restart();collectPickup({type:'bubble'});const saved=player.lives;hitPlayer();assert.equal(player.lives,saved);assert.equal(bubbleTime,0);
 restart();startWave(4);survivalTime=STEP/2;update();assert.ok(intermission>0);
+assert.equal(enemies.length,0);assert.match(toast.text,/FIENDER RETIRERAR/);
+let ticks=0;while(intermission>0&&ticks++<180)update();
+assert.ok(ticks<180);assert.equal(wave,5);assert.ok(boss);assert.equal(enemies.length,0);assert.equal(state,'playing');
 restart();startWave(5);bossIntro=0;boss.fireTimer=0;moveBoss();assert.equal(enemyBullets.length,1);
 enemyBullets=[];boss.hp=boss.maxHp/2;boss.fireTimer=0;moveBoss();assert.equal(enemyBullets.length,5);
 restart();keys.ArrowLeft=true;setState('paused');assert.equal(keys.ArrowLeft,undefined);
@@ -59,7 +62,7 @@ assert.equal(document.querySelectorAll('.weapon-slot')[2].disabled,false);
 document.querySelectorAll('.weapon-slot')[0].handlers.click({currentTarget:document.querySelectorAll('.weapon-slot')[0]});
 assert.equal(selectedWeapon,'cannon');
 drawScene(2002);assert.equal(document.querySelectorAll('.weapon-slot')[0].attributes['aria-pressed'],'true');
-console.log('PASS: v3.2.1 waves, visible inventory buttons, speed cap, enemies/bosses, weapons, bubble, survival, controls and frame-rate.');
+console.log('PASS: v3.2.2 survival transition, waves, weapons, shield, input and frame-rate.');
 `,context);
 
 vm.runInContext(`(async()=>{
@@ -71,9 +74,9 @@ effect(shootSound);assert.equal(linear[0][0],0.13);assert.equal(linear[1][0],0);
 stopVoices('effect');soundsEnabled=true;
 let lifeTones=[];
 audioContext.createOscillator=()=>({frequency:{setValueAtTime(value){lifeTones.push(value);},exponentialRampToValueAtTime(){},linearRampToValueAtTime(){}},connect(){},disconnect(){},start(){},stop(){}});
-restart();hitPlayer();assert.equal(player.lives,2);assert.deepEqual(lifeTones,[620,360,170]);
+restart();hitPlayer();assert.equal(player.lives,2);assert.deepEqual(lifeTones,[820,310,145,90,660]);
 lifeTones=[];hitPlayer();assert.deepEqual(lifeTones,[]);
-invulnerable=0;hitPlayer();assert.equal(player.lives,1);assert.deepEqual(lifeTones,[620,360,170]);
+invulnerable=0;hitPlayer();assert.equal(player.lives,1);assert.deepEqual(lifeTones,[820,310,145,90,660]);
 lifeTones=[];restart();collectPickup({type:'bubble'});lifeTones=[];hitPlayer();assert.equal(player.lives,3);assert.deepEqual(lifeTones,[330]);
 stopVoices('effect');soundsEnabled=false;
 await soundButton.handlers.click();assert.equal(soundsEnabled,true);assert.equal(audioContext.state,'running');assert.equal(voices.size,1);
