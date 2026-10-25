@@ -17,18 +17,43 @@ let intermission = 0;
 let waveDamage = 0;
 let pickupSequence = 0;
 let pickups = [];
-let tripleTime = 0;
-let laserTime = 0;
+// Variation repeats every five waves; the fifth remains a boss.
+let wavePattern = "classic";
+let waveClock = 0;
+let survivalTime = 0;
 let bubbleTime = 0;
+const weaponOrder = ["cannon","triple","laser","missile","bomb"];
+const weaponNames = { cannon:"KANON", triple:"TRIPPEL", laser:"LASER", missile:"ROBOT", bomb:"BOMB" };
+const arsenal = { triple:false, laser:0, missile:0, bomb:0 };
+let selectedWeapon = "cannon";
+function unlocked(type) { return type === "cannon" || (type === "triple" ? arsenal.triple : arsenal[type] > 0); }
+function chooseWeapon(type) {
+  if (!unlocked(type)) return false;
+  selectedWeapon = type;
+  notify(weaponNames[type] + " VALD", "#a5e8d3");
+  return true;
+}
+function cycleWeapon() {
+  const available = weaponOrder.filter(unlocked);
+  selectedWeapon = available[(available.indexOf(selectedWeapon) + 1) % available.length];
+  notify(weaponNames[selectedWeapon] + " VALD", "#a5e8d3");
+}
+function useCharge(type) {
+  arsenal[type]--;
+  if (arsenal[type] <= 0) {
+    selectedWeapon = arsenal.triple ? "triple" : "cannon";
+    notify(weaponNames[type] + " SLUT · " + weaponNames[selectedWeapon] + " VALD", "#ffce7b");
+  }
+}
 let laserFlash = 0;
 let laserX = 0;
 let runBest = 0;
 let stats = { kills: 0, bosses: 0, bonuses: 0 };
 let toast = { text: "", color: "#6ee6ff", time: 0 };
 function notify(text, color = "#6ee6ff") { toast = { text, color, time: 2.2 }; }
-const pickupTypes = ["triple", "bubble", "laser"];
-const pickupColors = { triple: "#ffce7b", bubble: "#77efc2", laser: "#b5a1ff" };
-const pickupLabels = { triple: "TRIPPELSKOTT", bubble: "SKYDDSBUBBLA", laser: "LASER" };
+const pickupTypes = ["triple", "bubble", "laser", "missile", "bomb"];
+const pickupColors = { triple:"#ffce7b", bubble:"#77efc2", laser:"#b5a1ff", missile:"#6ee6ff", bomb:"#ff8eab" };
+const pickupLabels = { triple:"TRIPPELSKOTT", bubble:"SKYDDSBUBBLA", laser:"LASER", missile:"MÅLSÖKANDE ROBOT", bomb:"ENERGIBOMB" };
 let bestScore = 0;
 try { bestScore = Number(localStorage.getItem("spaceShooterBest")) || 0; } catch (_) {}
 function recordScore() {
@@ -79,7 +104,8 @@ function restart() {
   Object.assign(player, { x: 375, bullets: [], lives: 3, powerLevel: 0 });
   enemyBullets = [];
   boss = null; bossIntro = 0; intermission = 0; waveDamage = 0;
-  pickups = []; pickupSequence = 0; tripleTime = 0; laserTime = 0; bubbleTime = 0; laserFlash = 0;
+  pickups = []; pickupSequence = 0; bubbleTime = 0; laserFlash = 0;
+  Object.assign(arsenal,{ triple:false, laser:0, missile:0, bomb:0 }); selectedWeapon = "cannon";
   stats = { kills: 0, bosses: 0, bonuses: 0 }; runBest = bestScore;
   toast.time = 0;
   score = 0; wave = 1; enemySpeed = 1; enemyDirection = 1;
@@ -92,20 +118,27 @@ const enemyColors = ["#68e3ff", "#d094ff", "#ffcb77"];
 
 function createEnemies() {
   enemies = [];
-  for (let i = 0; i < 5; i++) {
+  const rows = wavePattern === "survival" ? 3 : 5;
+  for (let i = 0; i < rows; i++) {
     for (let j = 0; j < 10; j++) {
       const type = i % 3;
-      enemies.push({ x: 60 + j * 60, y: 60 + i * 40, w: 30, h: 20, type, hp: type === 1 ? 2 : 1, alive: true, diving: false, hitFlash: 0, diveTime: 0 });
+      const x = 60 + j * 60, y = 60 + i * 40;
+      enemies.push({ x, y, baseX: x, baseY: y, col: j, row: i,
+        w: 30, h: 20, type, hp: type === 1 ? 2 : 1, alive: true,
+        diving: false, hitFlash: 0, diveTime: 0 });
     }
   }
 }
 function startWave(number) {
-  wave = number; waveDamage = 0; intermission = 0;
+  wave = number; waveDamage = 0; intermission = 0; waveClock = 0;
+  wavePattern = wave % 5 === 0 ? "boss" : ["classic", "weave", "split", "survival"][(wave - 1) % 5];
+  survivalTime = wavePattern === "survival" ? 25 : 0;
   player.bullets = []; enemyBullets = []; enemyDirection = 1;
-  enemySpeed = Math.min(3.5, 1 + (wave - 1) * .18);
+  // From wave 8 onward, variety replaces further speed increases.
+  enemySpeed = Math.min(2.15, 1 + (wave - 1) * .165);
   createShields(); waveFlash = 2;
   boss = null; bossIntro = 0;
-  if (wave % 5 === 0) {
+  if (wavePattern === "boss") {
     enemies = [];
     const hp = 40 + (wave / 5 - 1) * 15;
     boss = { x: 310, y: 82, w: 180, h: 64, hp, maxHp: hp, age: 0, fireTimer: .8, hitFlash: 0 };
@@ -113,7 +146,13 @@ function startWave(number) {
     notify("ALERT · MODERSKEPP NÄRMAR SIG", "#ff93a3");
   } else {
     createEnemies();
-    if (wave === 1) notify("FÅNGA BONUSAR · UNDVIK DYKANDE SKEPP");
+    const instructions = {
+      classic: "KLASSISK FORMATION · FÅNGA BONUSAR",
+      weave: "SICKSACK · RÖRLIGA FORMATIONER",
+      split: "TVÅ FLOTTOR · MOTSATTA RIKTNINGAR",
+      survival: "ÖVERLEVNAD · HÅLL UT I 25 SEKUNDER"
+    };
+    notify(instructions[wavePattern]);
   }
 }
 function overlaps(a, b) {
@@ -124,12 +163,17 @@ function dropPickup(x, y, forcedType) {
   pickups.push({ x: x - 14, y, w: 28, h: 28, type, age: 0 });
 }
 function collectPickup(pickup) {
-  if (pickup.type === "triple") tripleTime = 12;
-  if (pickup.type === "laser") laserTime = 7;
-  if (pickup.type === "bubble") bubbleTime = 15;
+  const type = pickup.type;
+  if (type === "bubble") bubbleTime = 15;
+  else if (type === "triple") {
+    if (arsenal.triple) { score += 350; recordScore(); }
+    else { arsenal.triple = true; selectedWeapon = type; }
+  } else if (type === "laser") { arsenal.laser = Math.min(60, arsenal.laser + 15); selectedWeapon = type; }
+  else if (type === "missile") { arsenal.missile = Math.min(40, arsenal.missile + 8); selectedWeapon = type; }
+  else if (type === "bomb") { arsenal.bomb = Math.min(16, arsenal.bomb + 3); selectedWeapon = type; }
   stats.bonuses++;
-  notify(pickupLabels[pickup.type] + " AKTIVERAD", pickupColors[pickup.type]);
-  burst(player.x + 25, player.y, pickupColors[pickup.type], 22);
+  notify(pickupLabels[type] + (type === "bubble" ? " AKTIVERAD" : " I FÖRRÅDET"), pickupColors[type]);
+  burst(player.x + 25, player.y, pickupColors[type], 22);
   effect(hitSound);
 }
 function hitPlayer() {
@@ -206,14 +250,16 @@ function createShields() {
 createEnemies();
 createShields();
 
-const gameKeys = new Set(["ArrowLeft", "ArrowRight", "KeyA", "KeyD", "Space", "KeyP", "Escape"]);
+const gameKeys = new Set(["ArrowLeft", "ArrowRight", "KeyA", "KeyD", "Space", "KeyP", "Escape", "KeyE", "Digit1", "Digit2", "Digit3", "Digit4", "Digit5"]);
 document.addEventListener("keydown", e => {
   if (/^(SELECT|INPUT|TEXTAREA)$/.test(e.target.tagName) || (e.target.tagName === "BUTTON" && e.code === "Space")) return;
   if (!gameKeys.has(e.code)) return;
   e.preventDefault();
   if (e.code === "KeyP" || e.code === "Escape") {
     if (!e.repeat && (state === "playing" || state === "paused")) { resumeGameAudio(); setState(state === "playing" ? "paused" : "playing"); }
-  } else if (state === "playing") keys[e.code] = true;
+  } else if (state === "playing" && !e.repeat && e.code === "KeyE") cycleWeapon();
+  else if (state === "playing" && !e.repeat && e.code.startsWith("Digit")) chooseWeapon(weaponOrder[Number(e.code.slice(5))-1]);
+  else if (state === "playing") keys[e.code] = true;
 });
 document.addEventListener("keyup", e => { delete keys[e.code]; });
 for (const [id, action] of [["leftButton", "left"], ["rightButton", "right"], ["fireButton", "fire"]]) {
@@ -244,6 +290,10 @@ playButton.addEventListener("click", () => {
   return audioReady;
 });
 pauseButton.addEventListener("click", () => setState("paused"));
+document.getElementById("weaponButton").addEventListener("click", e => {
+  if (state === "playing") cycleWeapon();
+  e.currentTarget.blur();
+});
 document.getElementById("restartButton").addEventListener("click", e => { resumeGameAudio(true); restart(); e.currentTarget.blur(); });
 window.addEventListener("blur", () => { if (state === "playing") setState("paused"); else clearInput(); });
 document.addEventListener("visibilitychange", () => { if (document.hidden && state === "playing") setState("paused"); });
@@ -256,22 +306,65 @@ function checkPowerLevel() {
 
 function fire() {
   if (cooldown > 0 || intermission > 0 || bossIntro > 0) return;
-  if (laserTime > 0) {
-    cooldown = .14; laserFlash = .10; laserX = player.x + 25;
+  if (!unlocked(selectedWeapon)) selectedWeapon = arsenal.triple ? "triple" : "cannon";
+  const type = selectedWeapon;
+  if (type === "laser") {
+    cooldown = .3; laserFlash = .14; laserX = player.x + 25;
     for (const e of enemies) if (e.alive && laserX + 5 > e.x && laserX - 5 < e.x + e.w) hitEnemy(e);
     if (boss && laserX + 5 > boss.x && laserX - 5 < boss.x + boss.w) hitBoss();
+    useCharge(type);
+  } else if (type === "missile") {
+    cooldown = .43;
+    player.bullets.push({ kind:"missile", x:player.x+21, y:player.y-8, w:8, h:14, vx:0, vy:-6 });
+    useCharge(type);
+  } else if (type === "bomb") {
+    cooldown = 1.1;
+    player.bullets.push({ kind:"bomb", x:player.x+18, y:player.y-10, w:14, h:14, age:0 });
+    useCharge(type);
   } else {
     cooldown = player.powerLevel === 2 ? .15 : .3;
-    if (tripleTime > 0) {
-      for (const vx of [-1.8, 0, 1.8]) player.bullets.push({ x: player.x + 23, y: player.y, vx });
+    if (type === "triple") {
+      for (const vx of [-1.8,0,1.8]) player.bullets.push({ x:player.x+23, y:player.y, vx });
     } else if (player.powerLevel >= 1) {
-      player.bullets.push({ x: player.x + 10, y: player.y });
-      player.bullets.push({ x: player.x + player.w - 14, y: player.y });
-    } else player.bullets.push({ x: player.x + player.w / 2 - 2, y: player.y });
+      player.bullets.push({ x:player.x+10, y:player.y });
+      player.bullets.push({ x:player.x+player.w-14, y:player.y });
+    } else player.bullets.push({ x:player.x+player.w/2-2, y:player.y });
   }
   effect(shootSound);
 }
-
+function explodeBomb(projectile) {
+  if (projectile.dead) return;
+  projectile.dead = true;
+  const cx = projectile.x+7, cy = projectile.y+7, radius = 120;
+  for (const e of enemies) if (e.alive && Math.hypot(e.x+15-cx,e.y+10-cy) < radius) hitEnemy(e);
+  if (boss && Math.hypot(boss.x+boss.w/2-cx,boss.y+boss.h/2-cy) < radius+60)
+    for (let i=0;i<5 && boss;i++) hitBoss();
+  enemyBullets = enemyBullets.filter(b => Math.hypot(b.x-cx,b.y-cy) > radius);
+  burst(cx,cy,"#ff8eab",60); effect(explosionSound);
+}
+function movePlayerProjectiles() {
+  for (const b of player.bullets) {
+    if (b.kind === "missile") {
+      const targets = boss && bossIntro <= 0 ? [boss] : enemies.filter(e => e.alive);
+      let target = null, closest = Infinity;
+      for (const e of targets) {
+        const d = Math.hypot(e.x+e.w/2-b.x,e.y+e.h/2-b.y);
+        if (d < closest) { closest = d; target = e; }
+      }
+      if (target) {
+        const dx = target.x+target.w/2-b.x, dy = target.y+target.h/2-b.y;
+        const length = Math.hypot(dx,dy) || 1;
+        b.vx += Math.max(-.42,Math.min(.42,dx/length*6-b.vx));
+        b.vy += Math.max(-.42,Math.min(.42,dy/length*6-b.vy));
+      }
+      b.x += b.vx; b.y += b.vy;
+    } else if (b.kind === "bomb") {
+      b.y -= 4.5; b.age += STEP;
+      if (b.y <= 185 || b.age >= 1.45) explodeBomb(b);
+    } else { b.y -= 7; b.x += b.vx || 0; }
+  }
+  player.bullets = player.bullets.filter(b => !b.dead && b.y > -18 && b.y < 620 && b.x > -20 && b.x < 820);
+}
 function enemyFire() {
   if (Math.random() < 0.02) {
     let shooters = enemies.filter(e => e.alive);
@@ -295,24 +388,42 @@ function moveEnemies() {
       if (overlaps(e, player)) { hitPlayer(); e.y = 620; }
       if (e.y > 610) { e.diving = false; e.x = e.homeX; e.y = e.homeY; e.diveTime = 0; }
     } else {
-      e.x += enemyDirection * enemySpeed * (e.type === 0 ? 1.15 : 1);
-      if (e.x < 0 || e.x + e.w > canvas.width) hitEdge = true;
+      if (wavePattern === "split") {
+        // Left and right formations sweep inward and outward in counter-motion.
+        e.x = e.baseX + (e.col < 5 ? 1 : -1) * Math.sin(waveClock * 1.6) * 28;
+        e.y = e.baseY + Math.floor(waveClock / 9) * 11;
+      } else {
+        e.x += enemyDirection * enemySpeed * (e.type === 0 ? 1.15 : 1);
+        if (wavePattern === "weave")
+          e.y = e.baseY + Math.sin(waveClock * 2 + e.col * .6 + e.row * .3) * 10;
+        if (e.x < 0 || e.x + e.w > canvas.width) hitEdge = true;
+      }
       if (e.type === 2 && divers < 2 && e.y < 330 && Math.random() < .0009) {
-        divers++; e.diving = true; e.homeX = e.x; e.homeY = e.y; e.diveVx = Math.max(-1.4, Math.min(1.4, (player.x - e.x) / 130));
+        divers++; e.diving = true; e.homeX = e.x; e.homeY = e.y;
+        e.diveVx = Math.max(-1.4, Math.min(1.4, (player.x - e.x) / 130));
       }
     }
   });
   if (hitEdge) {
     enemyDirection *= -1;
-    enemies.forEach(e => { if (e.alive && !e.diving) { e.x = Math.max(0, Math.min(770, e.x)); e.y += 10; } });
+    enemies.forEach(e => { if (e.alive && !e.diving) {
+      e.x = Math.max(0, Math.min(770, e.x));
+      e.y += 10; e.baseY += 10;
+    } });
   }
 }
 function checkCollisions() {
   for (const b of player.bullets) {
-    // Barriers block normal shots; the temporary laser shoots over them.
-    for (const shield of shields) if (!b.dead && shield.hp > 0 && overlaps(b, shield)) b.dead = true;
-    for (const e of enemies) if (!b.dead && e.alive && overlaps(b, e)) { b.dead = true; hitEnemy(e); }
-    if (!b.dead && boss && overlaps(b, boss)) { b.dead = true; hitBoss(); }
+    // Guided weapons pass friendly barriers; cannon/triple shots do not.
+    if (!b.kind) for (const shield of shields) if (!b.dead && shield.hp > 0 && overlaps(b, shield)) b.dead = true;
+    for (const e of enemies) if (!b.dead && e.alive && overlaps(b,e)) {
+      if (b.kind === "bomb") explodeBomb(b);
+      else { b.dead = true; hitEnemy(e); }
+    }
+    if (!b.dead && boss && overlaps(b,boss)) {
+      if (b.kind === "bomb") explodeBomb(b);
+      else { b.dead = true; hitBoss(); }
+    }
   }
   for (const b of enemyBullets) {
     for (const shield of shields) {
@@ -329,7 +440,7 @@ function checkCollisions() {
 function update() {
   cooldown = Math.max(0, cooldown - STEP);
   invulnerable = Math.max(0, invulnerable - STEP);
-  tripleTime = Math.max(0, tripleTime - STEP); laserTime = Math.max(0, laserTime - STEP); bubbleTime = Math.max(0, bubbleTime - STEP);
+  bubbleTime = Math.max(0, bubbleTime - STEP);
   laserFlash = Math.max(0, laserFlash - STEP); toast.time = Math.max(0, toast.time - STEP);
   if (keys["ArrowLeft"] || keys["KeyA"] || held("left")) player.x -= player.speed;
   if (keys["ArrowRight"] || keys["KeyD"] || held("right")) player.x += player.speed;
@@ -344,16 +455,18 @@ function update() {
     if (intermission === 0) startWave(wave + 1);
     checkPowerLevel(); return;
   }
+  waveClock += STEP;
+  if (wavePattern === "survival") survivalTime = Math.max(0, survivalTime - STEP);
   if (keys["Space"] || held("fire")) fire();
-  player.bullets.forEach(b => { b.y -= 7; b.x += b.vx || 0; });
-  player.bullets = player.bullets.filter(b => b.y > -10 && b.x > -4 && b.x < 800);
+  movePlayerProjectiles();
   enemyBullets.forEach(b => { b.y += b.vy ?? 4; b.x += b.vx || 0; });
   enemyBullets = enemyBullets.filter(b => b.y < 600 && b.x > -4 && b.x < 800);
   if (boss) moveBoss(); else moveEnemies();
   checkCollisions();
   if (enemies.some(e => e.alive && !e.diving && e.y + e.h >= player.y)) setState("over");
   if (state !== "playing") return;
-  if (!boss && enemies.every(e => !e.alive)) finishWave();
+  if (!boss && (enemies.every(e => !e.alive) ||
+      (wavePattern === "survival" && survivalTime === 0))) finishWave();
   else if (!boss) enemyFire();
   checkPowerLevel();
 }

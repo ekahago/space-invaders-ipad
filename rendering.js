@@ -88,14 +88,18 @@ function updateHUD() {
   document.getElementById("bestValue").textContent = String(bestScore).padStart(6,"0");
   document.getElementById("waveValue").textContent = String(wave).padStart(2,"0");
   document.getElementById("livesValue").textContent = "♥ ".repeat(Math.max(0,player.lives)).trim() || "—";
-  document.getElementById("powerValue").textContent = ["I","II","III"][player.powerLevel];
+  document.getElementById("powerValue").textContent = weaponNames[selectedWeapon] + (selectedWeapon === "cannon" ? " " + ["I","II","III"][player.powerLevel] : selectedWeapon === "triple" ? " ∞" : " ×" + arsenal[selectedWeapon]);
+  document.getElementById("arsenalValue").textContent = "KANON ∞ · " + (arsenal.triple ? "TRIPPEL ∞" : "TRIPPEL —") + " · LASER " + arsenal.laser + " · ROBOT " + arsenal.missile + " · BOMB " + arsenal.bomb;
   const sector = Math.floor((wave-1)/5);
-  document.getElementById("missionValue").textContent = "SEKTOR " + (sector+1) + " · " + ["ORBIT", "NEBULOSA", "DJUPRYMD"][sector%3] + (boss ? " · BOSS" : "");
+  const missionName = {
+    classic: "FORMATION", weave: "SICKSACK", split: "TVÅ FLOTTOR",
+    survival: "ÖVERLEV " + Math.ceil(survivalTime) + "s", boss: "BOSS"
+  }[wavePattern] || "";
+  document.getElementById("missionValue").textContent =
+    "SEKTOR " + (sector+1) + " · " + ["ORBIT", "NEBULOSA", "DJUPRYMD"][sector%3] + " · " + missionName;
   const active=[];
-  if(tripleTime>0)active.push("TRIPPEL " + Math.ceil(tripleTime) + "s");
-  if(laserTime>0)active.push("LASER " + Math.ceil(laserTime) + "s");
   if(bubbleTime>0)active.push("SKYDD " + Math.ceil(bubbleTime) + "s");
-  document.getElementById("buffValue").textContent=active.join(" · ") || "Fånga bonusar för nya vapen";
+  document.getElementById("buffValue").textContent=active.join(" · ") || "Vapnen sparas mellan vågorna";
 }
 function drawScene(timestamp) {
   const dt = renderTime === null ? 0 : Math.max(0,Math.min((timestamp-renderTime)/1000,.05));
@@ -129,7 +133,11 @@ function drawScene(timestamp) {
   pickups.forEach(p=>drawPickup(p,timestamp));
   if(laserFlash>0)drawLaser();
   ctx.save();ctx.shadowBlur=10;ctx.shadowColor="#7cf1ff";ctx.fillStyle="#b1f4ff";
-  player.bullets.forEach(b=>{ctx.fillRect(b.x,b.y,4,10);ctx.globalAlpha=.25;ctx.fillRect(b.x,b.y+10,4,10);ctx.globalAlpha=1;});
+  player.bullets.forEach(b=>{
+    if (b.kind === "missile") { ctx.fillStyle="#6ee6ff";ctx.fillRect(b.x,b.y,8,14);ctx.fillStyle="#ffcb77";ctx.fillRect(b.x+2,b.y+12,4,7); }
+    else if (b.kind === "bomb") { ctx.fillStyle="#ff8eab";ctx.beginPath();ctx.arc(b.x+7,b.y+7,8,0,Math.PI*2);ctx.fill(); }
+    else { ctx.fillStyle="#b1f4ff";ctx.fillRect(b.x,b.y,4,10);ctx.globalAlpha=.25;ctx.fillRect(b.x,b.y+10,4,10);ctx.globalAlpha=1; }
+  });
   ctx.shadowColor="#ff829c";ctx.fillStyle="#ff93a3";
   enemyBullets.forEach(b=>ctx.fillRect(b.x,b.y,4,10));ctx.restore();
   for(let i=particles.length-1;i>=0;i--){
@@ -157,7 +165,7 @@ function drawPickup(p,timestamp){
   const pulse=reducedMotion?1:1+Math.sin(timestamp/140)*.08;ctx.scale(pulse,pulse);
   ctx.shadowColor=pickupColors[p.type];ctx.shadowBlur=12;ctx.fillStyle="#10223a";ctx.strokeStyle=pickupColors[p.type];ctx.lineWidth=2;
   ctx.beginPath();ctx.moveTo(0,-17);ctx.lineTo(17,0);ctx.lineTo(0,17);ctx.lineTo(-17,0);ctx.closePath();ctx.fill();ctx.stroke();
-  ctx.shadowBlur=0;ctx.fillStyle=pickupColors[p.type];ctx.font="bold 17px monospace";ctx.textAlign="center";ctx.fillText({triple:"T",bubble:"S",laser:"L"}[p.type],0,6);ctx.restore();
+  ctx.shadowBlur=0;ctx.fillStyle=pickupColors[p.type];ctx.font="bold 17px monospace";ctx.textAlign="center";ctx.fillText({triple:"T",bubble:"S",laser:"L",missile:"R",bomb:"B"}[p.type],0,6);ctx.restore();
 }
 function drawLaser(){
   ctx.save();ctx.shadowColor="#a696ff";ctx.shadowBlur=20;ctx.fillStyle="#9476ff66";ctx.fillRect(laserX-7,0,14,player.y);

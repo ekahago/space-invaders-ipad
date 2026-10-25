@@ -5,14 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#080d1c">
   <title>Space Shooter · Orbital Defense</title>
-  <link rel="stylesheet" href="styles.css?v=3.0.3">
-  <script src="audio.js?v=3.0.3" defer></script>
-  <script src="rendering.js?v=3.0.3" defer></script>
-  <script src="game.js?v=3.0.3" defer></script>
+  <link rel="stylesheet" href="styles.css?v=3.2.0">
+  <script src="audio.js?v=3.2.0" defer></script>
+  <script src="rendering.js?v=3.2.0" defer></script>
+  <script src="game.js?v=3.2.0" defer></script>
 </head>
 <body>
 <main>
-  <header class="masthead"><div><span class="eyebrow">ORBITAL DEFENSE / 01</span><h1>SPACE<span>SHOOTER</span></h1></div><div class="build-info"><span class="release-badge" data-release-version>v3.0.3</span><span class="system-status"><i></i> SYSTEM ONLINE</span></div></header>
+  <header class="masthead"><div><span class="eyebrow">ORBITAL DEFENSE / 01</span><h1>SPACE<span>SHOOTER</span></h1></div><div class="build-info"><span class="release-badge" data-release-version>v3.2.0</span><span class="system-status"><i></i> SYSTEM ONLINE</span></div></header>
   <section class="hud" aria-label="Spelstatus">
     <div><span>POÄNG</span><strong id="scoreValue">000000</strong></div>
     <div><span>REKORD</span><strong id="bestValue">000000</strong></div>
@@ -21,6 +21,7 @@
     <div><span>VAPEN</span><strong id="powerValue">I</strong></div>
   </section>
   <div class="mission-status"><span id="missionValue">SEKTOR 1 · ORBIT</span><span id="buffValue">Fånga bonusar för nya vapen</span></div>
+  <div class="arsenal-status"><span>VAPENFÖRRÅD</span><strong id="arsenalValue">KANON ∞ · TRIPPEL — · LASER 0 · ROBOT 0 · BOMB 0</strong></div>
   <div class="board">
     <canvas id="gameCanvas" width="800" height="600" aria-label="Spelyta för Space Shooter">Din webbläsare behöver stöd för canvas.</canvas>
     <div id="overlay" class="overlay">
@@ -34,14 +35,14 @@
         <div><span>BOSSAR</span><strong id="resultBosses">0</strong></div><div><span>FÅNGADE BONUSAR</span><strong id="resultBonuses">0</strong></div>
       </div>
       <button id="playButton" class="primary">Starta spel <span aria-hidden="true">↗</span></button>
-      <span class="overlay-note">3 LIV · BONUSVAPEN · BOSS VAR FEMTE VÅG</span>
+      <span class="overlay-note">3 LIV · SAMLA VAPEN · BEHÅLL DEM MELLAN VÅGOR · BOSS VAR FEMTE VÅG</span>
     </div>
     <span class="board-corner" aria-hidden="true">SEKTOR 7G / LIVE</span>
   </div>
   <div class="controls" aria-label="Spelkontroller">
     <div class="movement"><button id="leftButton" aria-label="Flytta vänster">◀</button><button id="rightButton" aria-label="Flytta höger">▶</button></div>
     <span class="control-label">FLYG SÄKERT.<br>SIKTA HÖGT.</span>
-    <button id="fireButton"><span aria-hidden="true">⌖</span> Skjut</button>
+    <div class="attack-controls"><button id="weaponButton" type="button" aria-label="Byt vapen">↻<small>BYT VAPEN</small></button><button id="fireButton"><span aria-hidden="true">⌖</span> Skjut</button></div>
   </div>
   <section class="settings" aria-label="Spelinställningar">
     <div class="settings-heading"><span class="eyebrow">KONTROLLPANEL</span><span>PAUS / LJUD</span></div>
@@ -52,11 +53,11 @@
       <select id="musicSelect" aria-label="Musikspår"><option value="1">Musik 1 · Orbit</option><option value="2">Musik 2 · Puls</option><option value="3">Musik 3 · Nova</option><option value="4">Musik 4 · Signal</option></select>
       <button id="musicButton" aria-pressed="false">Musik: av</button>
     </div>
-    <p class="bonus-guide"><b>T</b> Trippelskott · <b>S</b> Skydd · <b>L</b> Laser<br>Fånga kapslarna med ditt skepp. Boss på våg 5, 10, 15…</p>
-    <p class="help">Dator: ← → eller A/D · Mellanslag: skjut · P/Esc: paus<br>iPad: håll inne pilarna och Skjut samtidigt.</p>
+    <p class="bonus-guide"><b>T</b> Trippel (obegränsad) · <b>S</b> Skydd (15 s) · <b>L</b> Laser (+15) · <b>R</b> Robot (+8) · <b>B</b> Bomb (+3)<br>Vapen och ammunition behålls mellan vågorna. Fånga kapslarna för att låsa upp och fylla på. Boss på våg 5, 10, 15…</p>
+    <p class="help">Dator: ← → eller A/D · Mellanslag: skjut · E: byt vapen · 1–5: välj vapen · P/Esc: paus<br>iPad: pilarna och Skjut kan hållas samtidigt. Tryck ↻ för att byta vapen.</p>
     <p id="audioStatus" role="status"></p>
   </section>
-  <footer>BYGGT FÖR IPAD & DATOR <span><span data-release-version>v3.0.3</span> · <time data-release-time datetime="2026-10-06T18:39:57+02:00">2026-10-06 18:39 CEST</time></span></footer>
+  <footer>BYGGT FÖR IPAD & DATOR <span><span data-release-version>v3.2.0</span> · <time data-release-time datetime="2026-10-25T16:36:38+01:00">2026-10-25 16:36 CET</time></span></footer>
 </main>
 </body>
 </html>

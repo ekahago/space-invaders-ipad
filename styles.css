@@ -75,3 +75,23 @@ footer { gap:12px; flex-wrap:wrap; line-height:1.8; }
   #fireButton { width:100%; }
 }
 
+
+/* Space Shooter 3.2.0: permanent inventory controls. */
+/* Permanent weapon-inventory layout. */
+.arsenal-status { display:flex; gap:12px; flex-wrap:wrap; align-items:baseline; justify-content:space-between; padding:8px 12px; margin:-4px 0 12px; border:1px solid #2a4660; border-radius:6px; background:#0c1929; color:#d6f0ff; font:11px ui-monospace,monospace; line-height:1.6; }
+.arsenal-status span { color:#79a4bc; font-size:9px; letter-spacing:1px; }
+.arsenal-status strong { font-weight:600; }
+.attack-controls { display:flex; gap:12px; align-items:center; }
+#weaponButton { min-width:92px; font-size:30px; color:#a5e8d3; border-color:#417e80; }
+#weaponButton small { display:block; font:700 10px ui-monospace,monospace; letter-spacing:.6px; }
+@media(max-width:700px) { .controls { flex-wrap:wrap; } .attack-controls { margin-left:auto; } #weaponButton { min-width:76px; min-height:80px; } }
+@media(max-width:520px) { .arsenal-status { font-size:9px; } .controls { gap:10px; } .movement { gap:12px; } .controls button { min-width:64px; } #fireButton { min-width:118px; } .attack-controls { gap:8px; } }
+@media(max-height:540px) and (orientation:landscape) { .controls { flex-wrap:nowrap; } .attack-controls { flex-direction:column; gap:16px; } #weaponButton { min-height:58px; } .arsenal-status { max-width:460px; margin:0 auto 8px; font-size:8px; } }
+
+/* Larger PC board, without changing internal 800 × 600 game coordinates.
+   Restrict to mouse/trackpad desktops; keep touch/iPad presentation intact. */
+@media (min-width:1000px) and (min-height:650px) and (hover:hover) and (pointer:fine) {
+  main { max-width:1240px; }
+  .board { max-width:1200px; min-width:0; width:min(100%, calc((100svh - 220px) * 4 / 3)); }
+  .controls { max-width:1200px; width:min(100%, calc((100svh - 220px) * 4 / 3)); }
+}
