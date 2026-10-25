@@ -41,7 +41,7 @@ function cycleWeapon() {
 function useCharge(type) {
   arsenal[type]--;
   if (arsenal[type] <= 0) {
-    selectedWeapon = arsenal.triple ? "triple" : "cannon";
+    selectedWeapon = "cannon";
     notify(weaponNames[type] + " SLUT · " + weaponNames[selectedWeapon] + " VALD", "#ffce7b");
   }
 }
@@ -167,10 +167,10 @@ function collectPickup(pickup) {
   if (type === "bubble") bubbleTime = 15;
   else if (type === "triple") {
     if (arsenal.triple) { score += 350; recordScore(); }
-    else { arsenal.triple = true; selectedWeapon = type; }
-  } else if (type === "laser") { arsenal.laser = Math.min(60, arsenal.laser + 15); selectedWeapon = type; }
-  else if (type === "missile") { arsenal.missile = Math.min(40, arsenal.missile + 8); selectedWeapon = type; }
-  else if (type === "bomb") { arsenal.bomb = Math.min(16, arsenal.bomb + 3); selectedWeapon = type; }
+    else { arsenal.triple = true; }
+  } else if (type === "laser") { arsenal.laser = Math.min(60, arsenal.laser + 15); }
+  else if (type === "missile") { arsenal.missile = Math.min(40, arsenal.missile + 8); }
+  else if (type === "bomb") { arsenal.bomb = Math.min(16, arsenal.bomb + 3); }
   stats.bonuses++;
   notify(pickupLabels[type] + (type === "bubble" ? " AKTIVERAD" : " I FÖRRÅDET"), pickupColors[type]);
   burst(player.x + 25, player.y, pickupColors[type], 22);
@@ -314,14 +314,14 @@ window.addEventListener("blur", () => { if (state === "playing") setState("pause
 document.addEventListener("visibilitychange", () => { if (document.hidden && state === "playing") setState("paused"); });
 function checkPowerLevel() {
   while (score >= nextPowerScore) {
-    player.powerLevel = Math.min(2, player.powerLevel + 1);
+    player.powerLevel = Math.min(3, player.powerLevel + 1);
     nextPowerScore += 1000;
   }
 }
 
 function fire() {
   if (cooldown > 0 || intermission > 0 || bossIntro > 0) return;
-  if (!unlocked(selectedWeapon)) selectedWeapon = arsenal.triple ? "triple" : "cannon";
+  if (!unlocked(selectedWeapon)) selectedWeapon = "cannon";
   const type = selectedWeapon;
   if (type === "laser") {
     cooldown = .3; laserFlash = .14; laserX = player.x + 25;
@@ -337,13 +337,18 @@ function fire() {
     player.bullets.push({ kind:"bomb", x:player.x+18, y:player.y-10, w:14, h:14, age:0 });
     useCharge(type);
   } else {
-    cooldown = player.powerLevel === 2 ? .15 : .3;
+    cooldown = player.powerLevel >= 2 ? .15 : .3;
     if (type === "triple") {
       for (const vx of [-1.8,0,1.8]) player.bullets.push({ x:player.x+23, y:player.y, vx });
-    } else if (player.powerLevel >= 1) {
-      player.bullets.push({ x:player.x+10, y:player.y });
-      player.bullets.push({ x:player.x+player.w-14, y:player.y });
-    } else player.bullets.push({ x:player.x+player.w/2-2, y:player.y });
+    } else {
+      // The permanent cannon upgrades from one to four simultaneous shots.
+      const shots = player.powerLevel + 1;
+      for (let i = 0; i < shots; i++) {
+        const x = shots === 1 ? player.x + player.w / 2 - 2
+          : player.x + 7 + i * 36 / (shots - 1);
+        player.bullets.push({ x, y:player.y });
+      }
+    }
   }
   effect(shootSound);
 }

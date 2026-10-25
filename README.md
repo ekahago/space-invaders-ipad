@@ -2,13 +2,19 @@
 
 Ett spel för iPad och dator, byggt med HTML, CSS, JavaScript och Canvas utan byggsteg.
 
-**Spela version 3.2.2:** https://ekahago.github.io/space-invaders-ipad/
+**Spela version 3.2.3:** https://ekahago.github.io/space-invaders-ipad/
 
 Tidigare tester (behållna):
 - Test 1, nya formationer och hastighet: https://ekahago.github.io/space-invaders-ipad/playtest/
 - Test 2, vapenförråd och nya vapen: https://ekahago.github.io/space-invaders-ipad/playtest2/
 
-## Nytt i 3.2.2
+## Nytt i 3.2.3
+
+- Kanonen är standardvapnet. När du plockar upp trippelskott, laser, robotar eller bomber läggs bonusen i förrådet utan automatiskt vapenbyte. Välj specialvapen själv, till exempel bomber inför moderskeppet.
+- När ammunitionen i valt specialvapen tar slut återgår spelet till kanonen.
+- Kanonen får fyra nivåer: 1, 2, 3 eller 4 samtidiga skott när du passerar poänggränserna. I vapenförrådet syns hur många skott kanonen skjuter.
+
+## Tidigare i 3.2.2
 
 - Överlevnadsvågen rensar nu kvarvarande fiender när tiden gått ut, med tydligt meddelande om reträtt och nedräkning inför nästa våg eller moderskeppet.
 - Starkare och mer distinkt ljud när spelarens skepp förstörs: smäll följd av fallande motorljud. Skyddsbubblans ljud är oförändrat.

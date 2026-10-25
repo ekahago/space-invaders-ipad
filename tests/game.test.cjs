@@ -29,14 +29,25 @@ restart();const armor=enemies.find(e=>e.type===1);player.bullets=[{x:armor.x+5,y
 player.bullets=[{x:armor.x+5,y:armor.y+2}];checkCollisions();assert.equal(armor.alive,false);assert.equal(stats.kills,1);assert.equal(score,150);
 restart();for(let i=0;i<40;i++)while(enemies[i].alive)hitEnemy(enemies[i]);
 assert.equal(pickups.length,5);assert.equal(pickups.map(p=>p.type).join(','),'triple,bubble,laser,missile,bomb');
-restart();collectPickup({type:'triple'});assert.equal(arsenal.triple,true);assert.equal(selectedWeapon,'triple');
+restart();collectPickup({type:'triple'});assert.equal(arsenal.triple,true);assert.equal(selectedWeapon,'cannon');
+assert.equal(chooseWeapon('triple'),true);
 cooldown=0;fire();assert.equal(player.bullets.length,3);assert.equal(player.bullets[0].vx,-1.8);
-collectPickup({type:'laser'});assert.equal(arsenal.laser,15);cooldown=0;fire();assert.equal(arsenal.laser,14);
-collectPickup({type:'missile'});cooldown=0;fire();assert.equal(arsenal.missile,7);assert.ok(player.bullets.some(b=>b.kind==='missile'));
-collectPickup({type:'bomb'});cooldown=0;fire();assert.equal(arsenal.bomb,2);assert.ok(player.bullets.some(b=>b.kind==='bomb'));
+collectPickup({type:'laser'});assert.equal(arsenal.laser,15);assert.equal(selectedWeapon,'triple');
+assert.equal(chooseWeapon('laser'),true);cooldown=0;fire();assert.equal(arsenal.laser,14);
+collectPickup({type:'missile'});assert.equal(selectedWeapon,'laser');
+assert.equal(chooseWeapon('missile'),true);cooldown=0;fire();assert.equal(arsenal.missile,7);assert.ok(player.bullets.some(b=>b.kind==='missile'));
+collectPickup({type:'bomb'});assert.equal(arsenal.bomb,3);assert.equal(selectedWeapon,'missile');
+assert.equal(chooseWeapon('bomb'),true);cooldown=0;fire();assert.equal(arsenal.bomb,2);assert.ok(player.bullets.some(b=>b.kind==='bomb'));
 startWave(2);assert.equal(arsenal.triple,true);assert.equal(arsenal.laser,14);assert.equal(arsenal.missile,7);assert.equal(arsenal.bomb,2);
 assert.equal(chooseWeapon('cannon'),true);cycleWeapon();assert.equal(selectedWeapon,'triple');assert.equal(chooseWeapon('laser'),true);
+arsenal.bomb=1;assert.equal(chooseWeapon('bomb'),true);cooldown=0;fire();
+assert.equal(arsenal.bomb,0);assert.equal(selectedWeapon,'cannon');
 restart();assert.equal(arsenal.triple,false);assert.equal(arsenal.laser,0);assert.equal(arsenal.missile,0);assert.equal(arsenal.bomb,0);
+restart();for (let level=0;level<=3;level++) {
+  player.powerLevel=level;player.bullets=[];cooldown=0;fire();
+  assert.equal(player.bullets.length,level+1);
+}
+restart();score=3000;checkPowerLevel();assert.equal(player.powerLevel,3);
 restart();collectPickup({type:'bubble'});const saved=player.lives;hitPlayer();assert.equal(player.lives,saved);assert.equal(bubbleTime,0);
 restart();startWave(4);survivalTime=STEP/2;update();assert.ok(intermission>0);
 assert.equal(enemies.length,0);assert.match(toast.text,/FIENDER RETIRERAR/);
@@ -56,13 +67,16 @@ restart();drawScene(2000);assert.equal(document.getElementById('waveValue').text
 assert.equal(document.querySelectorAll('.weapon-slot')[0].attributes['aria-pressed'],'true');
 assert.equal(document.querySelectorAll('.weapon-slot')[2].disabled,true);
 collectPickup({type:'laser'});drawScene(2001);
-assert.equal(document.querySelectorAll('.weapon-slot')[2].attributes['aria-pressed'],'true');
+assert.equal(document.querySelectorAll('.weapon-slot')[2].attributes['aria-pressed'],'false');
 assert.equal(document.querySelectorAll('.weapon-slot')[2].ammo.textContent,'15');
 assert.equal(document.querySelectorAll('.weapon-slot')[2].disabled,false);
+assert.equal(document.querySelectorAll('.weapon-slot')[0].ammo.textContent,'1 SKOTT');
+assert.equal(chooseWeapon('laser'),true);drawScene(2001);
+assert.equal(document.querySelectorAll('.weapon-slot')[2].attributes['aria-pressed'],'true');
 document.querySelectorAll('.weapon-slot')[0].handlers.click({currentTarget:document.querySelectorAll('.weapon-slot')[0]});
 assert.equal(selectedWeapon,'cannon');
 drawScene(2002);assert.equal(document.querySelectorAll('.weapon-slot')[0].attributes['aria-pressed'],'true');
-console.log('PASS: v3.2.2 survival transition, waves, weapons, shield, input and frame-rate.');
+console.log('PASS: v3.2.3 cannon upgrades, stored pickups and survival transition, waves, weapons, shield, input and frame-rate.');
 `,context);
 
 vm.runInContext(`(async()=>{
