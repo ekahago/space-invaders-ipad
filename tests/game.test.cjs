@@ -48,6 +48,16 @@ restart();for (let level=0;level<=3;level++) {
   assert.equal(player.bullets.length,level+1);
 }
 restart();score=3000;checkPowerLevel();assert.equal(player.powerLevel,3);
+restart();score=29999;recordScore();assert.equal(player.lives,3);assert.equal(nextExtraLifeScore,30000);
+score=30000;recordScore();assert.equal(player.lives,4);assert.equal(nextExtraLifeScore,80000);assert.equal(toast.text,'EXTRA SKEPP!');
+recordScore();assert.equal(player.lives,4);assert.equal(nextExtraLifeScore,80000);
+score=79999;recordScore();assert.equal(player.lives,4);
+score=80000;recordScore();assert.equal(player.lives,5);assert.equal(nextExtraLifeScore,130000);
+score=130000;recordScore();assert.equal(player.lives,5);assert.equal(nextExtraLifeScore,180000);
+player.lives=4;recordScore();assert.equal(player.lives,4);
+score=180000;recordScore();assert.equal(player.lives,5);assert.equal(nextExtraLifeScore,230000);
+restart();score=180000;recordScore();assert.equal(player.lives,5);assert.equal(nextExtraLifeScore,230000);
+restart();assert.equal(player.lives,3);assert.equal(nextExtraLifeScore,30000);
 restart();collectPickup({type:'bubble'});const saved=player.lives;hitPlayer();assert.equal(player.lives,saved);assert.equal(bubbleTime,0);
 restart();startWave(4);survivalTime=STEP/2;update();assert.ok(intermission>0);
 assert.equal(enemies.length,0);assert.match(toast.text,/FIENDER RETIRERAR/);
@@ -64,6 +74,7 @@ down('leftButton',1);down('fireButton',2);assert.ok(held('left')&&held('fire'));
 document.getElementById('leftButton').handlers.pointercancel({pointerId:1});assert.ok(!held('left')&&held('fire'));
 setState('paused');assert.equal(pointers.size,0);
 restart();drawScene(2000);assert.equal(document.getElementById('waveValue').textContent,'01');
+player.lives=5;drawScene(2000);assert.equal(document.getElementById('livesValue').textContent,'♥ ♥ ♥ ♥ ♥');
 assert.equal(document.querySelectorAll('.weapon-slot')[0].attributes['aria-pressed'],'true');
 assert.equal(document.querySelectorAll('.weapon-slot')[2].disabled,true);
 collectPickup({type:'laser'});drawScene(2001);
@@ -76,7 +87,7 @@ assert.equal(document.querySelectorAll('.weapon-slot')[2].attributes['aria-press
 document.querySelectorAll('.weapon-slot')[0].handlers.click({currentTarget:document.querySelectorAll('.weapon-slot')[0]});
 assert.equal(selectedWeapon,'cannon');
 drawScene(2002);assert.equal(document.querySelectorAll('.weapon-slot')[0].attributes['aria-pressed'],'true');
-console.log('PASS: v3.2.3 cannon upgrades, stored pickups and survival transition, waves, weapons, shield, input and frame-rate.');
+console.log('PASS: cannon upgrades, extra ships, stored pickups and survival transition, waves, weapons, shield, input and frame-rate.');
 `,context);
 
 vm.runInContext(`(async()=>{
