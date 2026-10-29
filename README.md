@@ -2,19 +2,19 @@
 
 Ett spel för iPad och dator, byggt med HTML, CSS, JavaScript och Canvas utan byggsteg.
 
-**Spela nuvarande publicerade version 3.2.3:** https://ekahago.github.io/space-invaders-ipad/
-
-**Testa version 3.2.4 – extraskepp (ej publicerad som ordinarie version):** https://ekahago.github.io/space-invaders-ipad/playtest3/
+**Spela version 3.2.4:** https://ekahago.github.io/space-invaders-ipad/
 
 Tidigare tester (behållna):
 - Test 1, nya formationer och hastighet: https://ekahago.github.io/space-invaders-ipad/playtest/
 - Test 2, vapenförråd och nya vapen: https://ekahago.github.io/space-invaders-ipad/playtest2/
 
-## Under granskning för nästa version
+## Nytt i 3.2.4
 
-- Spelaren får ett extraskepp vid 30 000 poäng och därefter var 50 000:e poäng, upp till maximalt fem samtidiga liv. Varje poänggräns räknas bara en gång per spelomgång.
+- Du får ett extraskepp vid 30 000 poäng och därefter vid 80 000, 130 000, 180 000 poäng och så vidare, upp till högst fem liv samtidigt.
+- Varje poänggräns ger högst ett extraskepp och räknas bara en gång per spelomgång, även om du redan har fem liv. När du startar en ny spelomgång börjar poänggränserna om.
+- Meddelandet **EXTRA SKEPP!** visas när du får ett nytt skepp. Livvisningen rymmer nu fem hjärtan.
 
-## Nytt i 3.2.3
+## Tidigare i 3.2.3
 
 - Kanonen är standardvapnet. När du plockar upp trippelskott, laser, robotar eller bomber läggs bonusen i förrådet utan automatiskt vapenbyte. Välj specialvapen själv, till exempel bomber inför moderskeppet.
 - När ammunitionen i valt specialvapen tar slut återgår spelet till kanonen.
