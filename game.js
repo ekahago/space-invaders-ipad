@@ -56,7 +56,21 @@ const pickupColors = { triple:"#ffce7b", bubble:"#77efc2", laser:"#b5a1ff", miss
 const pickupLabels = { triple:"TRIPPELSKOTT", bubble:"SKYDDSBUBBLA", laser:"LASER", missile:"MÅLSÖKANDE ROBOT", bomb:"ENERGIBOMB" };
 let bestScore = 0;
 try { bestScore = Number(localStorage.getItem("spaceShooterBest")) || 0; } catch (_) {}
+const MAX_LIVES = 5;
+const FIRST_EXTRA_LIFE_SCORE = 30000;
+const EXTRA_LIFE_SCORE_STEP = 50000;
+let nextExtraLifeScore = FIRST_EXTRA_LIFE_SCORE;
+function checkExtraLives() {
+  while (score >= nextExtraLifeScore) {
+    nextExtraLifeScore += EXTRA_LIFE_SCORE_STEP;
+    if (player.lives < MAX_LIVES) {
+      player.lives++;
+      notify("EXTRA SKEPP!", "#77efc2");
+    }
+  }
+}
 function recordScore() {
+  checkExtraLives();
   if (score > bestScore) {
     bestScore = score;
     try { localStorage.setItem("spaceShooterBest", String(bestScore)); } catch (_) {}
@@ -109,7 +123,7 @@ function restart() {
   stats = { kills: 0, bosses: 0, bonuses: 0 }; runBest = bestScore;
   toast.time = 0;
   score = 0; wave = 1; enemySpeed = 1; enemyDirection = 1;
-  cooldown = 0; invulnerable = 0; nextPowerScore = 1000;
+  cooldown = 0; invulnerable = 0; nextPowerScore = 1000; nextExtraLifeScore = FIRST_EXTRA_LIFE_SCORE;
   particles.length = 0; waveFlash = 2;
   startWave(1); setState("playing");
 }

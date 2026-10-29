@@ -2,13 +2,17 @@
 
 Ett spel för iPad och dator, byggt med HTML, CSS, JavaScript och Canvas utan byggsteg.
 
-**Spela version 3.2.3:** https://ekahago.github.io/space-invaders-ipad/
+**Spela nuvarande publicerade version 3.2.3:** https://ekahago.github.io/space-invaders-ipad/
 
 **Testa version 3.2.4 – extraskepp (ej publicerad som ordinarie version):** https://ekahago.github.io/space-invaders-ipad/playtest3/
 
 Tidigare tester (behållna):
 - Test 1, nya formationer och hastighet: https://ekahago.github.io/space-invaders-ipad/playtest/
 - Test 2, vapenförråd och nya vapen: https://ekahago.github.io/space-invaders-ipad/playtest2/
+
+## Under granskning för nästa version
+
+- Spelaren får ett extraskepp vid 30 000 poäng och därefter var 50 000:e poäng, upp till maximalt fem samtidiga liv. Varje poänggräns räknas bara en gång per spelomgång.
 
 ## Nytt i 3.2.3
 
